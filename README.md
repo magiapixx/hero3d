@@ -1,42 +1,52 @@
-_How to use this template:_
+# WebGL Snake Animation
 
-- Styles for the demo go in css/base.css
-- Add build instructions and credits to the README.md under "Installation"
-- For writing the tutorial, take a look at https://github.com/crnacura/CodropsTemplate/wiki/Writing-the-article
-- Delete this 'how to' intro in the final version. We'll fill in the details.
+This project explores procedural snake motion using steering forces, endless curve generation, and instanced GPU rendering to create smooth, responsive movement in real time.
 
----
+![WebGL Snake Demo](https://tympanus.net/codrops/wp-content/uploads/2026/02/snake.webp)
 
-# Title of the demo
+[Article on Codrops](https://tympanus.net/codrops/?p=108307)
 
-_A description of the demo goes here._
+[Demo](https://tympanus.net/Tutorials/WebGLSnakeAnimation/)
 
-![Image Title](https://generative-placeholders.glitch.me/image?width=800&height=600")
+## Features
 
-[Article on Codrops](https://tympanus.net/codrops/?p=)
+- **Procedural Motion**: Steering-based direction blended in real time
+- **Endless Curve Path**: Incremental Bézier generation with sliding-window management
+- **Stable Orientation**: Parallel transport frames for twist-free surface alignment
+- **GPU Instanced Rendering**: Efficient body rendering driven entirely by shaders
+- **Anatomical Shaping & Lighting**: Non-uniform profile, subtle twist, and scale-like surface detail
 
-[Demo](https://tympanus.net/Tutorials/.../)
+## Development
 
-## Installation
-
-Run this demo on a [local server](https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Tools_and_setup/set_up_a_local_testing_server).
-
-or
+Start the development server with hot module replacement:
 
 ```bash
-npm install
 npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Building for Production
+
+Create an optimized production build:
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist/` directory. Preview the production build:
+
+```bash
+npm run preview
 ```
 
 ## Credits
 
-- Add credits here. Inspiration, tools used etc.
-
 ## Misc
 
-Follow _Your Name_: [X](), [LinkedIn](), [Instagram](), [GitHub]()
+Follow Sujen: [Twitter](https://x.com/sujen_p), [GitHub](https://github.com/Sujenphea), [Linkedin](https://www.linkedin.com/in/sujenphea/)
 
-Follow Codrops: [X](http://www.x.com/codrops), [LinkedIn](https://www.linkedin.com/company/codrops/), [Instagram](https://www.instagram.com/codropsss/), [Facebook](https://www.facebook.com/codrops), [GitHub](https://github.com/codrops)
+Follow Codrops: [X](http://www.x.com/codrops), [Facebook](https://www.facebook.com/codrops), [Instagram](https://www.instagram.com/codropsss/), [LinkedIn](https://www.linkedin.com/company/codrops/), [GitHub](https://github.com/codrops)
 
 ## License
 
