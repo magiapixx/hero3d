@@ -7,6 +7,7 @@ import { RAFCollection } from "./utils/RAFCollection"
 import "../../css/base.css"
 import { FluidSim } from "./components/FluidSim"
 import { FboHelper } from "./common/FBOHelper"
+import { XylophoneBg } from "./components/XylophoneBg"
 
 class App {
   gl: WebGLRenderer
@@ -15,6 +16,7 @@ class App {
 
   // components
   xylophone: Xylophone
+  xylophoneBg: XylophoneBg
 
   // fluid
   fluid?: FluidSim
@@ -98,6 +100,7 @@ class App {
 
     // init components
     this.xylophone = new Xylophone()
+    this.xylophoneBg = new XylophoneBg()
     this.buildScene()
 
     // Add resize listener
@@ -109,6 +112,7 @@ class App {
 
   load() {
     this.xylophone.load()
+    this.xylophoneBg.load()
   }
 
   resize() {
@@ -129,6 +133,9 @@ class App {
 
       this.gl.setSize(newWidth, newHeight)
 
+      this.xylophone.resize()
+      this.xylophoneBg.resize()
+
       this.camera.aspect = newWidth / newHeight
       this.camera.updateProjectionMatrix()
     }
@@ -136,6 +143,7 @@ class App {
 
   buildScene() {
     this.scene.add(this.xylophone.buildScene())
+    this.scene.add(this.xylophoneBg.buildScene())
 
     // post update
     this.setupFluid()
@@ -166,6 +174,7 @@ class App {
 
     // update components
     this.xylophone.update(delta)
+    this.xylophoneBg.update()
 
     // render
     this.gl.render(this.scene, this.camera)
