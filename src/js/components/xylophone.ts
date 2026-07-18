@@ -292,7 +292,6 @@ export class Xylophone {
       this.uniforms.u_tGradient.value = this.buildGradientTexture()
     }
 
-    // update group rotation
     this.group = new Group()
     this.group.scale.setScalar(CONFIG.group.scale)
     this.group.rotation.set(
