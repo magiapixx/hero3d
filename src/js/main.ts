@@ -1,7 +1,8 @@
 import { NoToneMapping, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from "three"
-import { RAFCollection } from "./utils/RAFCollection"
+import { Xylophone } from "./components/xylophone"
 import { Input } from "./utils/input"
 import { Properties } from "./utils/properties"
+import { RAFCollection } from "./utils/RAFCollection"
 
 import "../../css/base.css"
 
@@ -11,6 +12,7 @@ class App {
   camera: PerspectiveCamera
 
   // components
+  xylophone: Xylophone
 
   // variables
   dateTime = performance.now()
@@ -70,17 +72,19 @@ class App {
     Input.preInit()
 
     // init components
-    ///
-    ///
+    this.xylophone = new Xylophone()
     this.buildScene()
 
     // Add resize listener
     this.resize()
     window.addEventListener("resize", this.boundResize)
     this.update()
+    this.load()
   }
 
-  load() {}
+  load() {
+    this.xylophone.load()
+  }
 
   resize() {
     const sizerEl = document.getElementById("sizer")
@@ -93,6 +97,7 @@ class App {
     if (this.size.width !== newWidth || this.size.height !== newHeight) {
       Properties.viewportWidth = newWidth
       Properties.viewportHeight = newHeight
+      Properties.globalUniforms.u_resolution.value.set(newWidth * Properties.dpr, newHeight * Properties.dpr)
 
       this.size.width = newWidth
       this.size.height = newHeight
@@ -105,8 +110,7 @@ class App {
   }
 
   buildScene() {
-    ///
-    ///
+    this.scene.add(this.xylophone.buildScene())
   }
 
   update() {
@@ -123,12 +127,15 @@ class App {
     this.dateTime = currDateTime
     delta = Math.min(delta, 1 / 20)
 
+    // update uniforms
+    Properties.globalUniforms.u_deltaTime.value = delta
+    Properties.globalUniforms.u_time.value += delta
+
     // update
     RAFCollection.forEach((callback) => callback(delta))
 
     // update components
-    ///
-    ///
+    this.xylophone.update(delta)
 
     // render
     this.gl.render(this.scene, this.camera)

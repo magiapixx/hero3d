@@ -1,5 +1,6 @@
-import { Vector2 } from "three"
+import { MathUtils, Vector2 } from "three"
 import { Properties } from "./properties"
+import { normalizeWheel } from "./normaliseWheel"
 
 export class Input {
   static mouseXY = new Vector2()
@@ -17,6 +18,10 @@ export class Input {
   static _prevMousePixelXY = new Vector2()
   static prevMousePixelXY = new Vector2()
 
+  // scroll
+  static deltaScrollY = 0
+  static lastScrollYDirection = 0
+
   // cache viewport dimensions for input calculations
   private static cachedViewportWidth = 0
   private static cachedViewportHeight = 0
@@ -26,6 +31,7 @@ export class Input {
   // store bound functions to fix memory leak
   private static boundOnMove: (e: MouseEvent) => void
   private static boundTouchMove: (e: TouchEvent) => void
+  private static _onWheelBound = (e: WheelEvent) => this._onWheel(e)
 
   /* --------------------------------- public --------------------------------- */
   static updateViewportCache() {
@@ -48,11 +54,14 @@ export class Input {
 
     document.addEventListener("mousemove", this.boundOnMove, { passive: true })
     document.addEventListener("touchmove", this.boundTouchMove, { passive: true })
+    document.addEventListener("wheel", this._onWheelBound, { passive: true })
   }
 
   static update() {}
 
   static postUpdate() {
+    this.deltaScrollY = 0
+
     this.deltaXY.set(0, 0)
     this.deltaScreenXY.set(0, 0)
     this.deltaPixelXY.set(0, 0)
@@ -64,6 +73,7 @@ export class Input {
   static destroy() {
     document.removeEventListener("mousemove", this.boundOnMove)
     document.removeEventListener("touchmove", this.boundTouchMove)
+    document.removeEventListener("wheel", this._onWheelBound)
   }
 
   /* ---------------------------------- utils --------------------------------- */
@@ -111,5 +121,13 @@ export class Input {
         handler.call(context, touch)
       }
     }
+  }
+
+  static _onWheel(e: WheelEvent) {
+    const wheel = normalizeWheel(e)
+    const sy = MathUtils.clamp(wheel.pixelY, -200, 200)
+
+    this.deltaScrollY += sy
+    if (sy !== 0) this.lastScrollYDirection = sy > 0 ? 1 : -1
   }
 }
