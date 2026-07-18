@@ -22,6 +22,7 @@ import {
 import { GLTFLoader, HDRLoader } from "three/examples/jsm/Addons.js"
 import xylophoneFrag from "../../shaders/xylophone/xylophoneFrag.glsl?raw"
 import xylophoneVert from "../../shaders/xylophone/xylophoneVert.glsl?raw"
+import { GLASS_LAYER } from "../configs/XylophoneConfig"
 import { Input } from "../utils/input"
 import { Properties } from "../utils/properties"
 
@@ -284,6 +285,7 @@ export class Xylophone {
 
       // create mesh
       this.mesh = new Mesh(this.instances.geometry, displayMaterial)
+      this.mesh.layers.enable(GLASS_LAYER) // also rendered in isolation into the view-normal buffer (SSAO)
       this.group.add(this.mesh)
 
       // update uniforms

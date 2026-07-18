@@ -1,4 +1,5 @@
 import { Vector2, WebGLRenderer } from "three"
+import { EffectComposer } from "postprocessing"
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
 
 export type QualityLevel = "low" | "medium" | "high"
@@ -30,6 +31,9 @@ export class Properties {
 
     u_resolution: { value: new Vector2() },
   }
+
+  // render
+  static composer = new EffectComposer()
 
   // Mobile detection
   static isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
