@@ -1,17 +1,21 @@
 import {
   Box3,
   BufferGeometry,
+  CanvasTexture,
+  ClampToEdgeWrapping,
   DoubleSide,
   EquirectangularReflectionMapping,
   Euler,
   Group,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
+  LinearFilter,
   MathUtils,
   Mesh,
   Quaternion,
   Raycaster,
   ShaderMaterial,
+  SRGBColorSpace,
   Texture,
   Vector3,
 } from "three"
@@ -208,6 +212,38 @@ export class Xylophone {
   // vars
   private geometryHeight = 1 // bar bbox height (helix vertical pitch)
 
+  /* ---------------------------------- utils --------------------------------- */
+  private buildGradientTexture(): Texture {
+    const width = 256
+    const canvas = document.createElement("canvas")
+    canvas.width = width
+    canvas.height = 1
+    const ctx = canvas.getContext("2d")!
+    const grad = ctx.createLinearGradient(0, 0, width, 0)
+    grad.addColorStop(0.0, "#ff0033")
+    grad.addColorStop(0.3, "#ff00d4")
+    grad.addColorStop(0.5, "#6a00ff")
+    grad.addColorStop(0.8, "#0090ff")
+    grad.addColorStop(1.0, "#00ffe1")
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, width, 1)
+
+    const tex = new CanvasTexture(canvas)
+    tex.colorSpace = SRGBColorSpace
+    tex.minFilter = LinearFilter
+    tex.magFilter = LinearFilter
+    tex.wrapS = ClampToEdgeWrapping
+    tex.wrapT = ClampToEdgeWrapping
+    tex.needsUpdate = true
+
+    return tex
+  }
+
+  /* --------------------------------- public --------------------------------- */
+  setFluid(fluidVelocity: { value: Texture | null }) {
+    this.uniforms.u_tFluid = fluidVelocity
+  }
+
   /* ---------------------------------- main ---------------------------------- */
   constructor() {}
 
@@ -249,6 +285,9 @@ export class Xylophone {
       // create mesh
       this.mesh = new Mesh(this.instances.geometry, displayMaterial)
       this.group.add(this.mesh)
+
+      // update uniforms
+      this.uniforms.u_tGradient.value = this.buildGradientTexture()
     }
 
     // update group rotation

@@ -1,4 +1,4 @@
-import { Vector2 } from "three"
+import { Vector2, WebGLRenderer } from "three"
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
 
 export type QualityLevel = "low" | "medium" | "high"
@@ -19,8 +19,11 @@ export class Properties {
   static viewportWidth = 0
   static viewportHeight = 0
   static dpr = Math.min(2, window.devicePixelRatio) ?? 1
+  static gl?: WebGLRenderer
 
   // uniforms
+  static time = 0
+  static deltaTime = 0
   static globalUniforms = {
     u_time: { value: 0 },
     u_deltaTime: { value: 0 },

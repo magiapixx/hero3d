@@ -5,6 +5,8 @@ import { Properties } from "./utils/properties"
 import { RAFCollection } from "./utils/RAFCollection"
 
 import "../../css/base.css"
+import { FluidSim } from "./components/FluidSim"
+import { FboHelper } from "./common/FBOHelper"
 
 class App {
   gl: WebGLRenderer
@@ -14,6 +16,9 @@ class App {
   // components
   xylophone: Xylophone
 
+  // fluid
+  fluid?: FluidSim
+
   // variables
   dateTime = performance.now()
   size = { width: 0, height: 0 }
@@ -22,6 +27,24 @@ class App {
   // Pre-bound methods to avoid creating new functions
   private boundUpdate = this.update.bind(this)
   private boundResize = this.resize.bind(this)
+
+  /* ---------------------------------- fluid --------------------------------- */
+  setupFluid() {
+    this.fluid = new FluidSim({
+      simRes: 128, // velocity field the reveal samples
+      curlStrength: 0.2,
+      splatRadius: 0.6,
+      splatForce: 20,
+      pressureIterations: 1,
+      velocityDissipation: 0.93,
+      pressureDissipation: 0.97,
+    })
+    this.fluid.enable()
+
+    this.xylophone.setFluid(this.fluid?.uniforms.velocity)
+  }
+
+  /* --------------------------------- passes --------------------------------- */
 
   /* ---------------------------------- main ---------------------------------- */
   constructor() {
@@ -48,6 +71,7 @@ class App {
     this.gl.domElement.style.pointerEvents = "none"
     this.gl.setPixelRatio(Properties.dpr)
     document.body.prepend(this.gl.domElement)
+    Properties.gl = this.gl
 
     // Handle WebGL context loss (common on mobile when backgrounding app)
     this.gl.domElement.addEventListener("webglcontextlost", (event) => {
@@ -70,6 +94,7 @@ class App {
 
     // pre init
     Input.preInit()
+    FboHelper.init()
 
     // init components
     this.xylophone = new Xylophone()
@@ -111,6 +136,9 @@ class App {
 
   buildScene() {
     this.scene.add(this.xylophone.buildScene())
+
+    // post update
+    this.setupFluid()
   }
 
   update() {
@@ -128,8 +156,10 @@ class App {
     delta = Math.min(delta, 1 / 20)
 
     // update uniforms
-    Properties.globalUniforms.u_deltaTime.value = delta
-    Properties.globalUniforms.u_time.value += delta
+    Properties.deltaTime = delta
+    Properties.time += delta
+    Properties.globalUniforms.u_deltaTime.value = Properties.deltaTime
+    Properties.globalUniforms.u_time.value = Properties.time
 
     // update
     RAFCollection.forEach((callback) => callback(delta))
