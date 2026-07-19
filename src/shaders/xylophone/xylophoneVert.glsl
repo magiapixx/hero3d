@@ -1,4 +1,5 @@
 uniform float u_time;
+uniform float u_spinSpeed;  // idle rotation
 uniform float u_swingScale; // 0..1 global swing amount (0 under prefers-reduced-motion)
 uniform vec3 u_swingAxis;   // local-space axis the strike swing rotates about
 
@@ -32,8 +33,8 @@ vec4 qmul(vec4 a, vec4 b) {
 /*                                    main                                    */
 /* -------------------------------------------------------------------------- */
 void main() {
-  // get rotation (static base spin — must match SPIN_HALF_ANGLE in the CPU picker)
-  float a = 3.14 * 0.25;
+  // get rotation
+  float a = u_time * u_spinSpeed * 0.5;
   vec4 spin = vec4(0.0, sin(a), 0.0, cos(a));
   vec4 rot = qmul(spin, aRot);
 

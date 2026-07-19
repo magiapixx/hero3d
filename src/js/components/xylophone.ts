@@ -134,8 +134,6 @@ export function buildInstancedGeometry(model: BufferGeometry, cfg: InstanceConfi
 /* -------------------------------------------------------------------------- */
 /*                                  hit test                                  */
 /* -------------------------------------------------------------------------- */
-const SPIN_HALF_ANGLE = 3.14 * 0.25
-
 // reusable temp math so hitBarIndex runs allocation-free every frame
 type HitWorkspace = {
   spin: Quaternion
@@ -168,12 +166,16 @@ export function hitBarIndex(
   instances: InstanceAttributes,
   localBox: Box3,
   groupMatrixWorld: Matrix4,
+  time: number,
+  spinSpeed: number,
   work: HitWorkspace
 ): number {
   const { aPos, aRot } = instances
   const count = aPos.length / 3
 
-  work.spin.set(0, Math.sin(SPIN_HALF_ANGLE), 0, Math.cos(SPIN_HALF_ANGLE))
+  // mirrors the idle spin in xylophoneVert.glsl: half-angle = time * spinSpeed * 0.5
+  const half = time * spinSpeed * 0.5
+  work.spin.set(0, Math.sin(half), 0, Math.cos(half))
 
   let hitIndex = -1
   let hitDist = Infinity
@@ -208,6 +210,7 @@ const CONFIG = {
   count: 64,
   radius: 1,
   tiltFalloff: 2,
+  spinSpeed: 0.3,
   thetaStep: 0.175,
   thetaOffset: Math.PI,
   group: { scale: 0.5, rotXDeg: 25, rotZDeg: 30 },
@@ -234,7 +237,7 @@ export class Xylophone {
     u_time: Properties.globalUniforms.u_time,
 
     // swing interaction
-    u_spinSpeed: { value: 0.3 },
+    u_spinSpeed: { value: CONFIG.spinSpeed },
     u_swingScale: { value: 1.0 },
     u_swingAxis: { value: new Vector3(0, 1, 0) },
 
@@ -430,6 +433,8 @@ export class Xylophone {
       this.hitInstances,
       this.instances.localBox,
       this.group.matrixWorld,
+      Properties.time,
+      this.uniforms.u_spinSpeed.value,
       this.hitWorkspace
     )
 
