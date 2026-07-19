@@ -2,46 +2,39 @@ import { Color, DoubleSide, Mesh, PlaneGeometry, ShaderMaterial } from "three"
 import xylophoneBgFrag from "../../shaders/xylophoneBg/xylophoneBgFrag.glsl?raw"
 import xylophoneBgVert from "../../shaders/xylophoneBg/xylophoneBgVert.glsl?raw"
 import { BG_LAYER } from "../configs/XylophoneConfig"
-import { Properties } from "../utils/properties"
 
+/** Fullscreen gradient behind the bars — also what the frosted transmission samples. */
 export class XylophoneBg {
-  // mesh
-  private mesh?: Mesh
-
-  uniforms = {
+  readonly uniforms = {
     u_color: { value: new Color(0xa391d3) },
-    u_colorDark: { value: new Color(0x0e0e0e) },
-    u_themeMix: { value: 1 },
-
-    u_resolution: Properties.globalUniforms.u_resolution,
-    u_debugPattern: { value: 0 },
+    u_debugPattern: { value: 0 }, // dev only: high-contrast checkerboard to read the transmission
   }
 
-  /* ---------------------------------- main ---------------------------------- */
-  load() {}
+  private mesh?: Mesh
+  private material?: ShaderMaterial
+  private geometry?: PlaneGeometry
 
-  buildScene() {
-    const geometry = new PlaneGeometry(2, 2)
+  build() {
+    this.geometry = new PlaneGeometry(2, 2)
+    this.material = new ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: xylophoneBgVert,
+      fragmentShader: xylophoneBgFrag,
+      side: DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    })
 
-    this.mesh = new Mesh(
-      geometry,
-      new ShaderMaterial({
-        uniforms: this.uniforms,
-        vertexShader: xylophoneBgVert,
-        fragmentShader: xylophoneBgFrag,
-        side: DoubleSide,
-        depthTest: false,
-        depthWrite: false,
-      })
-    )
+    this.mesh = new Mesh(this.geometry, this.material)
     this.mesh.renderOrder = -1
     this.mesh.frustumCulled = false // clip-space quad has no meaningful bounds
-    this.mesh.layers.enable(BG_LAYER) // also rendered in isolation into the bg-only buffer
+    this.mesh.layers.enable(BG_LAYER) // also rendered in isolation into the backdrop buffer
 
     return this.mesh
   }
 
-  resize() {}
-  update() {}
-  dispose() {}
+  dispose() {
+    this.geometry?.dispose()
+    this.material?.dispose()
+  }
 }

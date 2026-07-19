@@ -3,12 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Demoname | Demo 1 | Codrops</title>
-    <meta name="description" content="" />
-    <meta name="keywords" content="" />
+    <title>WebGL Xylophone | Codrops</title>
+    <meta
+      name="description"
+      content="An interactive WebGL xylophone: a scrolling helix of frosted glass bars that ring as you sweep the cursor across them."
+    />
+    <meta name="keywords" content="webgl, three.js, instancing, fluid simulation, web audio, glass, refraction" />
     <link rel="icon" type="image/svg+xml" href="https://tympanus.net/favicon/favicon.svg" />
     <link rel="shortcut icon" href="https://tympanus.net/favicon/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="css/base.css" />
     <script>
       document.documentElement.className = "js"
     </script>
@@ -24,11 +26,12 @@
       </div>
     </noscript>
 
+    <!-- tracks the layout viewport; steadier than innerHeight while mobile browser chrome moves -->
     <div id="sizer" aria-hidden="true"></div>
 
     <main>
       <header class="frame">
-        <h1 class="frame__title">The Title</h1>
+        <h1 class="frame__title">WebGL Xylophone</h1>
         <nav class="frame__links">
           <a href="https://tympanus.net/codrops/?p=">Article</a>
           <a href="https://tympanus.net/codrops/hub/">All demos</a>
@@ -39,15 +42,8 @@
           <a href="https://tympanus.net/codrops/hub/tag/three-js/">#three.js</a>
           <a href="https://tympanus.net/codrops/hub/tag/webgl/">#webgl</a>
         </nav>
-        <nav class="frame__demos">
-          <span>Variation 1</span>
-          <a href="index2.html">Variation 2</a>
-          <a href="index3.html">Variation 3</a>
-        </nav>
       </header>
-      <div class="content">
-        <h2>The Content</h2>
-      </div>
+      <div class="content"></div>
     </main>
     <!--script src="https://tympanus.net/codrops/adpacks/cda_sponsor.js"></script-->
     <script type="module" src="./js/main.ts"></script>

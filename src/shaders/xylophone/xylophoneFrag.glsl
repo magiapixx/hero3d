@@ -26,9 +26,6 @@ uniform float u_iridShift;
 uniform float u_iridPower;
 uniform float u_iridBody;
 
-// theme
-uniform float u_themeMix;
-
 /* -------------------------------- varyings -------------------------------- */
 varying vec3 vNormal;
 varying vec3 vWorldPos;
@@ -79,7 +76,7 @@ void main() {
 
   // soft lighting
   float diffuse = max(dot(N, normalize(vec3(0.4, 1.0, 0.35))), 0.0);
-  vec3 ambLo = mix(vec3(0.05, 0.05, 0.07), vec3(0.45, 0.46, 0.5), u_themeMix);
+  vec3 ambLo = vec3(0.45, 0.46, 0.5); // ambient floor, lifted toward white as the normal points up
   vec3 ambient = mix(ambLo, vec3(1.0), N.y * 0.5 + 0.5);
   vec3 lighting = ambient * 0.6 + diffuse * 0.4;
 

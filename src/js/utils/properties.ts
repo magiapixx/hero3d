@@ -1,57 +1,27 @@
-import { Vector2, WebGLRenderer } from "three"
 import { EffectComposer } from "postprocessing"
-import GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
+import { Vector2, WebGLRenderer } from "three"
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
 
-export type QualityLevel = "low" | "medium" | "high"
-
-export interface SnakeConfig {
-  length: number
-  spineSegments: number
-  radialSegments: number
-  texturePoints: number
-  dpr: number
-  enableDebug: boolean
-  shaderQuality: QualityLevel
-  scaleMin: number
-  scaleMax: number
-}
-
+/** Shared render state and the uniform objects every material reads by reference. */
 export class Properties {
   static viewportWidth = 0
   static viewportHeight = 0
-  static dpr = Math.min(2, window.devicePixelRatio) ?? 1
-  static gl?: WebGLRenderer
+  static dpr = Math.min(2, window.devicePixelRatio || 1)
 
-  // uniforms
+  static gl?: WebGLRenderer
+  static composer = new EffectComposer()
+
+  // clock
   static time = 0
   static deltaTime = 0
+
+  // shared by reference into materials — assigning `.value` updates every consumer
   static globalUniforms = {
     u_time: { value: 0 },
     u_deltaTime: { value: 0 },
-
     u_resolution: { value: new Vector2() },
   }
 
-  // render
-  static composer = new EffectComposer()
-
-  // Mobile detection
-  static isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  static isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0
-
-  // Quality level system
-  static qualityLevel: QualityLevel = Properties.detectQualityLevel()
-  static gui: GUI | null = import.meta.env.DEV ? new GUI() : null
-
-  private static detectQualityLevel(): QualityLevel {
-    // Mobile devices → low quality for performance
-    if (this.isMobile) {
-      console.log("[Properties] Detected quality: low (mobile device)")
-      return "low"
-    }
-
-    // Desktop → always high quality, let DPR be what device supports
-    console.log(`[Properties] Detected quality: high (desktop, DPR: ${this.dpr})`)
-    return "high"
-  }
+  /** Dev-only tuning panel. null in production, and lil-gui is never bundled there. */
+  static gui: GUI | null = null
 }

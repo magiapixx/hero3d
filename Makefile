@@ -1,7 +1,13 @@
-.PHONY: tailwind.default
-tailwind.default:
-	npx tailwindcss init --full tailwind-default.config.js
+.PHONY: run build preview lint
 
-.PHONY: run
 run:
 	npm run dev
+
+build:
+	npm run build
+
+preview:
+	npm run preview
+
+lint:
+	npx tsc --noEmit && npx eslint src

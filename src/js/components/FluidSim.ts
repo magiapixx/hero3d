@@ -47,20 +47,11 @@ type FluidSimOptions = {
   curlStrength: number
   splatRadius: number
   splatForce: number
+  /** Seconds of pointer stillness before the solve is skipped entirely. */
   idleSleepAfter: number
 }
 
-// Default configuration constants
-const DEFAULT_CONFIG = {
-  simRes: 128,
-  pressureIterations: 3,
-  pressureDissipation: 0.8,
-  velocityDissipation: 0.98,
-  curlStrength: 10,
-  splatRadius: 0.12,
-  splatForce: 50,
-  idleSleepAfter: 2.5,
-}
+const IDLE_SLEEP_AFTER = 2.5
 
 // Shared temp vector to avoid allocations
 const tempVector1 = new Vector2()
@@ -319,7 +310,7 @@ export class FluidSim {
     this.updatePoint()
 
     // Idle gate: once input is stale and the field has dissipated, skip the solve to save GPU/battery.
-    if (!shouldSolveFluid(Properties.time, this.lastUserInput, this.config.idleSleepAfter ?? 2.5)) {
+    if (!shouldSolveFluid(Properties.time, this.lastUserInput, this.config.idleSleepAfter)) {
       Properties.gl!.autoClear = savedAutoClear
       Properties.gl!.setRenderTarget(savedRenderTarget)
       return
@@ -386,18 +377,15 @@ export class FluidSim {
   }
 
   /* ---------------------------------- main ---------------------------------- */
-  constructor(options: Partial<FluidSimOptions> = {}) {
-    // Merge options with defaults
-    const opts = { ...DEFAULT_CONFIG, ...options }
-
-    // Initialize config
+  constructor(options: Omit<FluidSimOptions, "idleSleepAfter">) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linearFilteringSupported = (Properties.gl!.capabilities as any).floatLinearFiltering
 
     this.config = {
-      ...opts,
+      ...options,
+      idleSleepAfter: IDLE_SLEEP_AFTER,
       linearFilteringSupported,
-      simTexelSize: 1 / opts.simRes,
+      simTexelSize: 1 / options.simRes,
       aspect: 1,
     }
 
@@ -450,11 +438,8 @@ export class FluidSim {
     this.materials.advection.dispose()
 
     // Dispose render targets
-    ;[this.fbos.velocity, this.fbos.pressure].forEach((fbo) => {
-      fbo.read.dispose()
-      fbo.write.dispose()
-    })
-
+    this.fbos.velocity.dispose()
+    this.fbos.pressure.dispose()
     this.fbos.divergence.dispose()
     this.fbos.curl.dispose()
   }

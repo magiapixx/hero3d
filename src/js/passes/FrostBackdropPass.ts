@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { GaussianBlurPass, Pass } from "postprocessing"
 import {
   LinearFilter,
