@@ -1,11 +1,21 @@
+uniform float u_time;
+uniform float u_swingScale; // 0..1 global swing amount (0 under prefers-reduced-motion)
+uniform vec3 u_swingAxis;   // local-space axis the strike swing rotates about
+
 attribute vec3 aPos;
 attribute vec4 aRot;
 attribute float aTintOffset;
+attribute float aStrikeTime; // u_time when this bar was last struck (-1e9 = never)
 
 varying vec3 vNormal;
 varying vec3 vWorldPos;
 varying vec2 vScreenUv;
 varying float vTintOffset;
+
+// strike swing — damped pendulum
+const float SWING_AMP = 0.58;   // peak swing angle (radians)
+const float SWING_FREQ = 16.0;  // bob frequency (rad/s)
+const float SWING_DECAY = 4.5;  // damping (1/s)
 
 /* -------------------------------------------------------------------------- */
 /*                                  rotation                                  */
@@ -22,10 +32,19 @@ vec4 qmul(vec4 a, vec4 b) {
 /*                                    main                                    */
 /* -------------------------------------------------------------------------- */
 void main() {
-  // get rotation
+  // get rotation (static base spin — must match SPIN_HALF_ANGLE in the CPU picker)
   float a = 3.14 * 0.25;
   vec4 spin = vec4(0.0, sin(a), 0.0, cos(a));
   vec4 rot = qmul(spin, aRot);
+
+  // strike swing — damped pendulum about the bar's origin, decaying since aStrikeTime.
+  // at rest (never struck) dt is huge, so env -> 0 and the pose is unchanged.
+  float dt = u_time - aStrikeTime;
+  float env = step(0.0, dt) * exp(-dt * SWING_DECAY);
+  float ang = env * SWING_AMP * sin(dt * SWING_FREQ) * u_swingScale;
+  float halfAng = ang * 0.5;
+  vec4 swing = vec4(normalize(u_swingAxis) * sin(halfAng), cos(halfAng));
+  rot = qmul(rot, swing);
 
   // update position
   vec3 transformedPos = aPos + rotateByQuat(position, rot);

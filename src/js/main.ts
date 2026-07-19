@@ -336,7 +336,7 @@ class App {
     RAFCollection.forEach((callback) => callback(delta))
 
     // update components
-    this.xylophone.update(delta)
+    this.xylophone.update(delta, this.camera)
     this.xylophoneBg.update()
 
     // render (composer runs frostBackdrop -> render -> normal -> ssao -> aa)

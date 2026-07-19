@@ -11,8 +11,11 @@ import {
   InstancedBufferGeometry,
   LinearFilter,
   MathUtils,
+  Matrix4,
   Mesh,
+  PerspectiveCamera,
   Quaternion,
+  Ray,
   Raycaster,
   ShaderMaterial,
   SRGBColorSpace,
@@ -25,6 +28,7 @@ import xylophoneVert from "../../shaders/xylophone/xylophoneVert.glsl?raw"
 import { GLASS_LAYER } from "../configs/XylophoneConfig"
 import { Input } from "../utils/input"
 import { Properties } from "../utils/properties"
+import { XylophoneAudio } from "./XylophoneAudio"
 
 /* -------------------------------------------------------------------------- */
 /*                                    types                                   */
@@ -128,19 +132,87 @@ export function buildInstancedGeometry(model: BufferGeometry, cfg: InstanceConfi
 }
 
 /* -------------------------------------------------------------------------- */
+/*                                  hit test                                  */
+/* -------------------------------------------------------------------------- */
+const SPIN_HALF_ANGLE = 3.14 * 0.25
+
+// reusable temp math so hitBarIndex runs allocation-free every frame
+type HitWorkspace = {
+  spin: Quaternion
+  aRotQ: Quaternion
+  rotQ: Quaternion
+  pos: Vector3
+  scale: Vector3
+  mat: Matrix4
+  inv: Matrix4
+  ray: Ray
+  hit: Vector3
+}
+
+function createHitWorkspace(): HitWorkspace {
+  return {
+    spin: new Quaternion(),
+    aRotQ: new Quaternion(),
+    rotQ: new Quaternion(),
+    pos: new Vector3(),
+    scale: new Vector3(1, 1, 1),
+    mat: new Matrix4(),
+    inv: new Matrix4(),
+    ray: new Ray(),
+    hit: new Vector3(),
+  }
+}
+
+export function hitBarIndex(
+  worldRay: Ray,
+  instances: InstanceAttributes,
+  localBox: Box3,
+  groupMatrixWorld: Matrix4,
+  work: HitWorkspace
+): number {
+  const { aPos, aRot } = instances
+  const count = aPos.length / 3
+
+  work.spin.set(0, Math.sin(SPIN_HALF_ANGLE), 0, Math.cos(SPIN_HALF_ANGLE))
+
+  let hitIndex = -1
+  let hitDist = Infinity
+
+  for (let i = 0; i < count; i++) {
+    work.aRotQ.set(aRot[i * 4], aRot[i * 4 + 1], aRot[i * 4 + 2], aRot[i * 4 + 3])
+    work.rotQ.multiplyQuaternions(work.spin, work.aRotQ)
+    work.pos.set(aPos[i * 3], aPos[i * 3 + 1], aPos[i * 3 + 2])
+
+    work.mat.compose(work.pos, work.rotQ, work.scale)
+    work.mat.premultiply(groupMatrixWorld)
+    work.inv.copy(work.mat).invert()
+
+    work.ray.copy(worldRay).applyMatrix4(work.inv)
+    const pt = work.ray.intersectBox(localBox, work.hit)
+    if (pt) {
+      const dist = work.ray.origin.distanceTo(pt)
+      if (dist < hitDist) {
+        hitDist = dist
+        hitIndex = i
+      }
+    }
+  }
+
+  return hitIndex
+}
+
+/* -------------------------------------------------------------------------- */
 /*                                  constants                                 */
 /* -------------------------------------------------------------------------- */
 const CONFIG = {
   count: 64,
   radius: 1,
   tiltFalloff: 2,
-  spinSpeed: 0.3,
   thetaStep: 0.175,
   thetaOffset: Math.PI,
   group: { scale: 0.5, rotXDeg: 25, rotZDeg: 30 },
   tintWrap: 10,
   scroll: { sensitivity: 0.005, lerp: 5 },
-  audio: { url: "/audio/do.wav", baseFreq: 523.25, octaveSpan: 3 },
 } as const
 
 /* -------------------------------------------------------------------------- */
@@ -162,7 +234,7 @@ export class Xylophone {
     u_time: Properties.globalUniforms.u_time,
 
     // swing interaction
-    u_spinSpeed: { value: CONFIG.spinSpeed },
+    u_spinSpeed: { value: 0.3 },
     u_swingScale: { value: 1.0 },
     u_swingAxis: { value: new Vector3(0, 1, 0) },
 
@@ -197,7 +269,12 @@ export class Xylophone {
 
   // instancing
   private instances?: ReturnType<typeof buildInstancedGeometry>
-  private pickInstances?: InstanceAttributes
+  private hitInstances?: InstanceAttributes
+
+  // strike (audio + swing)
+  private audio?: XylophoneAudio
+  private lastHitIndex = -1
+  private readonly hitWorkspace = createHitWorkspace()
 
   // raycasting
   raycast = new Raycaster()
@@ -273,7 +350,7 @@ export class Xylophone {
     if (this.modelGeometry) {
       this.instances = buildInstancedGeometry(this.modelGeometry, CONFIG)
       this.geometryHeight = this.instances.localBox.max.y - this.instances.localBox.min.y
-      this.pickInstances = { aPos: this.instances.transforms.positions, aRot: this.instances.transforms.rotations }
+      this.hitInstances = { aPos: this.instances.transforms.positions, aRot: this.instances.transforms.rotations }
 
       // get material
       const displayMaterial = new ShaderMaterial({
@@ -290,15 +367,19 @@ export class Xylophone {
 
       // update uniforms
       this.uniforms.u_tGradient.value = this.buildGradientTexture()
+
+      // setup audio
+      this.audio = new XylophoneAudio({
+        url: "/assets/audio/do.wav",
+        count: CONFIG.count,
+        baseFreq: 523.25,
+        octaveSpan: 3,
+      })
+      void this.audio.load()
     }
 
-    this.group = new Group()
     this.group.scale.setScalar(CONFIG.group.scale)
-    this.group.rotation.set(
-      MathUtils.degToRad(CONFIG.group.rotXDeg), // X: tilt into depth
-      0,
-      MathUtils.degToRad(CONFIG.group.rotZDeg) // Z: roll to the diagonal
-    )
+    this.group.rotation.set(MathUtils.degToRad(25), 0, MathUtils.degToRad(30))
     this.group.updateMatrixWorld()
 
     // reduced motion
@@ -311,7 +392,7 @@ export class Xylophone {
 
   resize() {}
 
-  update(delta: number): void {
+  update(delta: number, camera: PerspectiveCamera): void {
     if (!this.instances) return
 
     // scroll
@@ -337,5 +418,26 @@ export class Xylophone {
 
       this.phaseWritten = this.phaseCurrent
     }
+
+    // hit testing
+    if (!this.hitInstances) return
+    const pointerReady = !(Input.mousePixelXY.x === 0 && Input.mousePixelXY.y === 0)
+    if (!pointerReady) return
+
+    this.raycast.setFromCamera(Input.mouseXY, camera)
+    const index = hitBarIndex(
+      this.raycast.ray,
+      this.hitInstances,
+      this.instances.localBox,
+      this.group.matrixWorld,
+      this.hitWorkspace
+    )
+
+    if (index !== -1 && index !== this.lastHitIndex) {
+      this.instances.aStrikeTime.setX(index, Properties.time)
+      this.instances.aStrikeTime.needsUpdate = true
+      this.audio?.playNote(index)
+    }
+    this.lastHitIndex = index
   }
 }
