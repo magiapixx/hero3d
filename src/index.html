@@ -43,7 +43,18 @@
           <a href="https://tympanus.net/codrops/hub/tag/webgl/">#webgl</a>
         </nav>
       </header>
-      <div class="content"></div>
+      <div class="content">
+        <!-- the demo overrides the iOS ringer switch, so it owes the user a way to silence it -->
+        <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="true">
+          <svg class="sound-toggle__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" />
+            <path class="sound-toggle__wave" d="M16.5 8.8a4.5 4.5 0 0 1 0 6.4" />
+            <path class="sound-toggle__wave" d="M19.2 6.1a8.5 8.5 0 0 1 0 11.8" />
+            <path class="sound-toggle__slash" d="M3.5 3.5l17 17" />
+          </svg>
+          <span class="sound-toggle__text">Sound on</span>
+        </button>
+      </div>
     </main>
     <!--script src="https://tympanus.net/codrops/adpacks/cda_sponsor.js"></script-->
     <script type="module" src="./js/main.ts"></script>

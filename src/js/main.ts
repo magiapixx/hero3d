@@ -17,6 +17,7 @@ import { XylophoneBg } from "./components/XylophoneBg"
 import { FLUID, FROST, SSAO } from "./configs/XylophoneConfig"
 import { FrostBackdropPass } from "./passes/FrostBackdropPass"
 import { GlassBufferPass } from "./passes/GlassBufferPass"
+import { SoundToggle } from "./ui/SoundToggle"
 import { Input } from "./utils/input"
 import { Properties } from "./utils/properties"
 import { RAFCollection } from "./utils/RAFCollection"
@@ -43,6 +44,9 @@ class App {
   private readonly ssaoEffect: SSAOEffect
   private readonly ssaoPass: EffectPass
   private readonly aaPass: EffectPass
+
+  // ui
+  private soundToggle: SoundToggle
 
   // frame
   private size = { width: 0, height: 0 }
@@ -200,6 +204,9 @@ class App {
     this.resize()
     window.addEventListener("resize", this.boundResize)
 
+    this.soundToggle = new SoundToggle((muted) => this.xylophone.setMuted(muted))
+    this.soundToggle.mount()
+
     void this.xylophone.load()
     void this.setupDebug()
 
@@ -252,6 +259,7 @@ class App {
     window.cancelAnimationFrame(this.rafId)
     window.removeEventListener("resize", this.boundResize)
     Input.destroy()
+    this.soundToggle.destroy()
 
     for (const pass of [this.frostBackdropPass, this.renderPass, this.normalPass, this.ssaoPass, this.aaPass]) {
       Properties.composer.removePass(pass)

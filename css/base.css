@@ -6,10 +6,10 @@
 
 :root {
   font-size: 12px;
-  --color-text: #fff;
-  --color-bg: #000;
-  --color-link: #fff;
-  --color-link-hover: #fff;
+  --color-text: #000;
+  --color-bg: #fff;
+  --color-link: #000;
+  --color-link-hover: #000;
   --page-padding: 1.5rem;
 }
 
@@ -17,6 +17,9 @@ body {
   margin: 0;
   color: var(--color-text);
   background-color: var(--color-bg);
+  /* the demo owns the vertical drag (it scrolls the helix), so suppress native scroll/overscroll */
+  touch-action: none;
+  overscroll-behavior: none;
   font-family:
     system-ui,
     -apple-system,
@@ -218,4 +221,61 @@ a {
   user-select: none;
   visibility: hidden;
   opacity: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                    sound                                   */
+/* -------------------------------------------------------------------------- */
+.sound-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+
+  grid-area: demos;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover .sound-toggle__icon,
+  &:focus-visible .sound-toggle__icon {
+    opacity: 1;
+  }
+}
+
+.sound-toggle__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.7;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transition: opacity 0.2s;
+
+  /* the speaker body reads as a solid shape; only the waves and slash are strokes */
+  path:first-child {
+    fill: currentColor;
+    stroke-linejoin: round;
+  }
+}
+
+/* waves when audible, slash when muted */
+.sound-toggle__slash {
+  display: none;
+}
+
+.sound-toggle.is-muted {
+  .sound-toggle__wave {
+    display: none;
+  }
+
+  .sound-toggle__slash {
+    display: block;
+  }
 }

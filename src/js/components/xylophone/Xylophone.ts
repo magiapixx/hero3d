@@ -110,6 +110,7 @@ export class Xylophone {
 
   // strike (audio + swing)
   private audio?: XylophoneAudio
+  private muted = false
   private lastHitIndex = -1
   private readonly raycast = new Raycaster()
   private readonly hitWorkspace = createHitWorkspace()
@@ -125,6 +126,12 @@ export class Xylophone {
   /** Shares the fluid's velocity uniform by reference — no per-frame copy. */
   setFluid(fluidVelocity: { value: Texture | null }) {
     this.uniforms.u_tFluid = fluidVelocity
+  }
+
+  /** Held here too: the toggle can be set before the model (and its audio) finish loading. */
+  setMuted(muted: boolean) {
+    this.muted = muted
+    this.audio?.setMuted(muted)
   }
 
   /* --------------------------------- update --------------------------------- */
@@ -235,6 +242,7 @@ export class Xylophone {
       baseFreq: AUDIO.baseFreq,
       octaveSpan: AUDIO.octaveSpan,
     })
+    this.audio.setMuted(this.muted)
     void this.audio.load()
   }
 

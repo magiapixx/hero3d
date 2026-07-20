@@ -46,6 +46,21 @@ export function buildPentatonicTable(count: number, base: number, octaveSpan: nu
   return out
 }
 
+/** 50ms of silence — 8kHz 8-bit mono WAV, ~440 bytes inline. Used only to steer iOS's audio session. */
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA"
+
+function createSilentAudioElement(): HTMLAudioElement {
+  const el = document.createElement("audio")
+  el.src = SILENT_WAV
+  el.loop = true // keeps the session in the exempt category between gestures
+  el.volume = 0
+  el.setAttribute("playsinline", "") // never take over the screen on iOS
+  el.preload = "auto"
+
+  return el
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                    main                                    */
 /* -------------------------------------------------------------------------- */
@@ -67,17 +82,43 @@ export class XylophoneAudio {
   private readonly voiceGain: number
 
   private disabled = false
+  private muted = false
   private activeVoices = 0
+  private silentEl?: HTMLAudioElement
 
-  // autoplay policy: the context boots suspended; the first real gesture resumes it
-  private readonly onGesture = () => {
-    this.resume()
-    this.removeGestureListeners()
-  }
+  // Every gesture, not just the first: resuming handles the autoplay policy, and re-playing
+  // the silent clip keeps iOS's audio session in the category that survives the mute switch.
+  private readonly onGesture = () => this.unlock()
 
   /* --------------------------------- utils ---------------------------------- */
   private resume() {
     if (this.ctx?.state === "suspended") void this.ctx.resume()
+  }
+
+  /**
+   * iOS routes Web Audio through an audio session the hardware mute switch silences, while
+   * `<audio>` elements are exempt. Playing a silent clip through an `<audio>` element on a
+   * user gesture moves the session into the exempt category, so the bars stay audible with
+   * the ringer off. Both steps are best-effort — neither is supported everywhere.
+   */
+  private unlock() {
+    // muted is the user's explicit choice — never override the ringer switch against it
+    if (this.muted) return
+
+    // experimental; declares intent directly where the browser understands it
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession
+    if (session) session.type = "playback"
+
+    void this.silentEl?.play().catch(() => {})
+    this.resume()
+  }
+
+  /** Muting also drops the iOS session override, so the ringer switch is respected again. */
+  setMuted(muted: boolean) {
+    this.muted = muted
+
+    if (muted) this.silentEl?.pause()
+    else this.unlock() // called from the toggle's click, so it counts as a user gesture
   }
 
   private disable(reason: string, err?: unknown) {
@@ -120,6 +161,8 @@ export class XylophoneAudio {
       this.master.gain.value = 1
       this.master.connect(this.ctx.destination)
 
+      this.silentEl = createSilentAudioElement()
+
       const res = await fetch(this.url)
       if (!res.ok) throw new Error(`status ${res.status}`)
       this.buffer = await this.ctx.decodeAudioData(await res.arrayBuffer())
@@ -131,7 +174,7 @@ export class XylophoneAudio {
   }
 
   playNote(index: number) {
-    if (this.disabled || !this.ctx || !this.buffer || !this.master) return
+    if (this.muted || this.disabled || !this.ctx || !this.buffer || !this.master) return
     if (this.activeVoices >= this.maxVoices) return
     this.resume()
 
@@ -155,6 +198,8 @@ export class XylophoneAudio {
 
   dispose() {
     this.removeGestureListeners()
+    this.silentEl?.pause()
+    this.silentEl = undefined
     this.master?.disconnect()
     void this.ctx?.close()
     this.ctx = undefined
