@@ -137,6 +137,8 @@ a {
   a,
   button {
     pointer-events: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .frame__title {
@@ -221,6 +223,25 @@ a {
   user-select: none;
   visibility: hidden;
   opacity: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+.frame {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* -------------------------------------------------------------------------- */

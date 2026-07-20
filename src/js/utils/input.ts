@@ -4,14 +4,15 @@ import { Properties } from "./properties"
 
 const MAX_SCROLL_PER_EVENT = 200 // one violent wheel notch shouldn't jump the whole helix
 const DRAG_AXIS_LOCK_PX = 8 // travel before a touch drag commits to an axis
+const DRAG_SCALE = 3
 
 /**
  * Global pointer + wheel state, sampled once per frame by the components that need it.
  *
  * Deltas accumulate across every event in a frame and are cleared in `postUpdate()`, so a
- * consumer reading `deltaScrollY` sees the whole frame's scroll regardless of how many
- * events fired. Wheel and touch drag both feed `deltaScrollY` in the same unit (CSS pixels),
- * so consumers don't care which device produced it.
+ * consumer reading `deltaScrollY` sees the whole frame's scroll regardless of how many events
+ * fired. Wheel and touch drag both normalise into `deltaScrollY`, so consumers never branch
+ * on which device produced it.
  */
 export class Input {
   /** NDC, -1..1 — raycasting */
@@ -118,7 +119,7 @@ export class Input {
     if (this.dragAxis !== "y") return
 
     // dragging up scrolls forward, matching the wheel's sign
-    const delta = this.dragPrevY - touch.clientY
+    const delta = (this.dragPrevY - touch.clientY) * DRAG_SCALE
     this.deltaScrollY += MathUtils.clamp(delta, -MAX_SCROLL_PER_EVENT, MAX_SCROLL_PER_EVENT)
     this.dragPrevY = touch.clientY
   }
