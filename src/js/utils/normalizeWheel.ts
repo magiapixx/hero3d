@@ -1,63 +1,35 @@
-const PIXEL_STEP = 10
-const LINE_HEIGHT = 40
-const PAGE_HEIGHT = 800
+/**
+ * Wheel deltas do not arrive in a single unit. `deltaMode` says which one the browser used:
+ * pixels (every modern Chromium/WebKit build), lines (Firefox on some platforms), or pages.
+ * Scrolling by a raw `deltaY` therefore moves a wildly different amount per browser.
+ *
+ * Converting to pixels here keeps the scroll consumer from having to know any of that.
+ *
+ * Reduced from Facebook's `normalizeWheel` to the one axis and one unit this demo uses. The
+ * original also handled `wheelDelta`, `event.detail` and Gecko's `axis` property — all dead in
+ * every browser that can run WebGL2, so none of it survives here.
+ */
 
-export const normalizeWheel = (event: WheelEvent | Event) => {
-  let sX = 0
-  let sY = 0
-  let pX = 0
-  let pY = 0
+// WheelEvent.DOM_DELTA_* as plain constants — the named forms are instance properties, awkward
+// to reach from a switch.
+const DELTA_MODE_PIXEL = 0
+const DELTA_MODE_LINE = 1
+const DELTA_MODE_PAGE = 2
 
-  if ("detail" in event) {
-    sY = event.detail
+const PIXELS_PER_LINE = 40
+const PIXELS_PER_PAGE = 800
+
+/** Vertical wheel movement in pixels, whichever unit the browser reported it in. */
+export function normalizeWheelY(event: WheelEvent): number {
+  switch (event.deltaMode) {
+    case DELTA_MODE_LINE:
+      return event.deltaY * PIXELS_PER_LINE
+
+    case DELTA_MODE_PAGE:
+      return event.deltaY * PIXELS_PER_PAGE
+
+    case DELTA_MODE_PIXEL:
+    default:
+      return event.deltaY
   }
-
-  // if ("wheelDelta" in a) {
-  //   t = -a.wheelDelta / 120
-  // }
-
-  if ("deltaY" in event) {
-    sY = -event.deltaY / 120
-  }
-
-  if ("deltaX" in event) {
-    sX = -event.deltaX / 120
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ("axis" in event && event.axis === (event as any).HORIZONTAL_AXIS) {
-    sX = sY
-    sY = 0
-  }
-
-  pX = sX * PIXEL_STEP
-  pY = sY * PIXEL_STEP
-
-  if ("deltaY" in event) {
-    pY = event.deltaY
-  }
-
-  if ("deltaX" in event) {
-    pX = event.deltaX
-  }
-
-  if ((pX || pY) && event instanceof WheelEvent && event.deltaMode) {
-    if (event.deltaMode === 1) {
-      pX *= LINE_HEIGHT
-      pY *= LINE_HEIGHT
-    } else {
-      pX *= PAGE_HEIGHT
-      pY *= PAGE_HEIGHT
-    }
-  }
-
-  if (pX && !sX) {
-    sX = pX < 1 ? -1 : 1
-  }
-
-  if (pY && !sY) {
-    sY = pY < 1 ? -1 : 1
-  }
-
-  return { spinX: sX, spinY: sY, pixelX: pX, pixelY: pY }
 }

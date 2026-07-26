@@ -31,6 +31,21 @@ varying float vTintOffset;
 const float PI = 3.141592653589793;
 
 /* -------------------------------------------------------------------------- */
+/*                                    look                                    */
+/* -------------------------------------------------------------------------- */
+// Fixed values behind the look. Anything a reader would want to sweep live is a uniform with a
+// lil-gui binding instead; these are the ones that were dialled in once and left alone.
+
+const vec3 LIGHT_DIR = vec3(0.4, 1.0, 0.35); // key light, above and slightly camera-right
+const float AMBIENT_MIX = 0.6;               // ambient vs diffuse split (diffuse takes the rest)
+
+const float FLUID_GATE_MAX = 0.2;   // fluid speed that counts as a full-strength hover
+const float TINT_OPACITY_DROP = 0.6; // tinted bars go this much less transmissive, so colour reads
+
+const float SHEEN_MIX = 0.35; // peak sheen blend at grazing angles
+const float RIM_LIFT = 0.06;  // flat brightness added at the silhouette, to separate overlaps
+
+/* -------------------------------------------------------------------------- */
 /*                                 iridescence                                */
 /* -------------------------------------------------------------------------- */
 vec3 iridescence(float t) {
@@ -67,13 +82,13 @@ void main() {
   vec3 V = normalize(cameraPosition - vWorldPos);
 
   // soft lighting
-  float diffuse = max(dot(N, normalize(vec3(0.4, 1.0, 0.35))), 0.0);
+  float diffuse = max(dot(N, normalize(LIGHT_DIR)), 0.0);
   vec3 ambLo = vec3(0.45, 0.46, 0.5); // ambient floor, lifted toward white as the normal points up
   vec3 ambient = mix(ambLo, vec3(1.0), N.y * 0.5 + 0.5);
-  vec3 lighting = ambient * 0.6 + diffuse * 0.4;
+  vec3 lighting = ambient * AMBIENT_MIX + diffuse * (1.0 - AMBIENT_MIX);
 
   // tint reveal
-  float velocity = smoothstep(0.0, 0.2, length(texture2D(u_tFluid, vScreenUv).xy));
+  float velocity = smoothstep(0.0, FLUID_GATE_MAX, length(texture2D(u_tFluid, vScreenUv).xy));
   float reveal = clamp(velocity * u_fluidStrength, 0.0, 1.0);
   vec3 tint = texture2D(u_tGradient, vec2(fract(vTintOffset * u_tintWrap), 0.5)).rgb;
 
@@ -87,7 +102,7 @@ void main() {
   trans = mix(trans, tint, reveal);
 
   // blend backdrop through the body (less transmissive where the tint is revealed)
-  vec3 frosted = mix(body, trans, u_transmission * (1.0 - 0.6 * reveal));
+  vec3 frosted = mix(body, trans, u_transmission * (1.0 - TINT_OPACITY_DROP * reveal));
 
   // grazing-angle term shared by sheen and iridescence
   float edge = clamp(1.0 - max(dot(N, V), 0.0), 0.0, 1.0);
@@ -95,8 +110,8 @@ void main() {
 
   // add sheen
   vec3 sheen = proceduralEnv(reflect(-V, N));
-  vec3 color = mix(frosted, sheen, fres * 0.35);
-  color += fres * 0.06; // subtle rim lift
+  vec3 color = mix(frosted, sheen, fres * SHEEN_MIX);
+  color += fres * RIM_LIFT;
 
   // add hover color
   color += tint * reveal * u_tintGlow;

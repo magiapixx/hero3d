@@ -8,6 +8,7 @@ import {
   RawShaderMaterial,
   type RenderTargetOptions,
   RGBAFormat,
+  type ShaderMaterialParameters,
   Texture,
   Vector2,
   Vector3,
@@ -23,7 +24,7 @@ import fluidPressureFrag from "../../shaders/fluid/fluidPressureFrag.glsl?raw"
 import fluidSplatFrag from "../../shaders/fluid/fluidSplatFrag.glsl?raw"
 import fluidVorticityFrag from "../../shaders/fluid/fluidVorticityFrag.glsl?raw"
 import { FBO } from "../common/FBO"
-import { FboHelper } from "../common/FBOHelper"
+import { FBOHelper } from "../common/FBOHelper"
 import { Input } from "../utils/input"
 import { Properties } from "../utils/properties"
 import { RAFCollection } from "../utils/RAFCollection"
@@ -47,19 +48,18 @@ type FluidSimOptions = {
   curlStrength: number
   splatRadius: number
   splatForce: number
-  /** Seconds of pointer stillness before the solve is skipped entirely. */
-  idleSleepAfter: number
 }
 
+/** Seconds of pointer stillness before the solve is skipped entirely. */
 const IDLE_SLEEP_AFTER = 2.5
 
-// Shared temp vector to avoid allocations
-const tempVector1 = new Vector2()
+/** Reused for the per-frame pointer delta, so `updatePoint` allocates nothing. */
+const pointerDelta = new Vector2()
 
 /* -------------------------------------------------------------------------- */
 /*                                    utils                                   */
 /* -------------------------------------------------------------------------- */
-export function shouldSolveFluid(time: number, lastUserInput: number, sleepAfter: number): boolean {
+function shouldSolveFluid(time: number, lastUserInput: number, sleepAfter: number): boolean {
   return time - lastUserInput <= sleepAfter
 }
 
@@ -68,12 +68,11 @@ export function shouldSolveFluid(time: number, lastUserInput: number, sleepAfter
 /* -------------------------------------------------------------------------- */
 export class FluidSim {
   point: TouchPoint
-  private _enabled: boolean
+  private isRunning = false
   private lastUserInput = 0
 
   // Private configuration
   private config: {
-    linearFilteringSupported: boolean
     simTexelSize: number
     aspect: number
   } & FluidSimOptions
@@ -98,136 +97,113 @@ export class FluidSim {
   // output (shared by reference into consumer materials): the hover-wake velocity field
   uniforms: { velocity: { value: Texture | null } }
 
-  /* ---------------------------------- utils --------------------------------- */
-  private createMaterials() {
-    const capabilities = Properties.gl!.capabilities // FluidSim only exists when gl does
-    const highPrecision = capabilities.getMaxPrecision("highp")
-    const mediumPrecision = capabilities.getMaxPrecision("mediump")
-
-    const clear = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
-        u_tTexture: { value: null },
-        u_value: { value: this.config.pressureDissipation },
-        u_dt: { value: 1 / 60 },
-      },
+  /* -------------------------------- materials ------------------------------- */
+  /**
+   * Every pass is the same shape: the shared fullscreen-quad vertex shader, no depth, and a
+   * precision prefix. Only the fragment shader, its uniforms and that precision differ, so this
+   * takes the differences and fills in the rest.
+   */
+  private createPassMaterial(
+    fragmentShader: string,
+    precision: string,
+    uniforms: ShaderMaterialParameters["uniforms"],
+    defines?: Record<string, boolean>
+  ) {
+    return FBOHelper.createRawShaderMaterial({
+      uniforms,
       vertexShader: fluidVert,
-      fragmentShader: fluidClearFrag,
+      fragmentShader,
       depthTest: false,
       depthWrite: false,
-      fragmentShaderPrefix: `precision ${mediumPrecision} float;\nprecision ${mediumPrecision} sampler2D;\n`,
+      fragmentShaderPrefix: `precision ${precision} float;\nprecision ${precision} sampler2D;\n`,
+      // spread rather than pass directly: three warns about an explicitly-undefined `defines`
+      ...(defines ? { defines } : {}),
     })
+  }
 
-    const splat = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
+  /**
+   * One material per step of the solve. The passes that integrate velocity need `highp` —
+   * at mediump the field drifts and the wake visibly quantises. The ones that only take
+   * finite differences of neighbours are fine at mediump, which is cheaper on mobile.
+   */
+  private createMaterials() {
+    const capabilities = Properties.gl!.capabilities // FluidSim only exists when gl does
+    const high = capabilities.getMaxPrecision("highp")
+    const medium = capabilities.getMaxPrecision("mediump")
+
+    // `u_texelSize` is per-material because each RawShaderMaterial owns its own uniform objects
+    const texelSize = () => ({ u_texelSize: { value: new Vector2() } })
+
+    return {
+      splat: this.createPassMaterial(fluidSplatFrag, high, {
+        ...texelSize(),
         u_tTarget: { value: null },
         u_aspectRatio: { value: 1 },
         u_splatColor: { value: new Vector3() },
         u_splatPosition: { value: new Vector2() },
         u_prevPoint: { value: new Vector2() },
         u_splatRadius: { value: 1 },
-      },
-      vertexShader: fluidVert,
-      fragmentShader: fluidSplatFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${highPrecision} float;\nprecision ${highPrecision} sampler2D;\n`,
-    })
+      }),
 
-    const curl = FboHelper.createRawShaderMaterial({
-      uniforms: { u_texelSize: { value: new Vector2() }, u_tVelocity: { value: null } },
-      vertexShader: fluidVert,
-      fragmentShader: fluidCurlFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${mediumPrecision} float;\nprecision ${mediumPrecision} sampler2D;\n`,
-    })
+      curl: this.createPassMaterial(fluidCurlFrag, medium, {
+        ...texelSize(),
+        u_tVelocity: { value: null },
+      }),
 
-    const vorticity = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
+      vorticity: this.createPassMaterial(fluidVorticityFrag, high, {
+        ...texelSize(),
         u_tVelocity: { value: null },
         u_tCurl: { value: null },
         u_curl: { value: this.config.curlStrength },
         u_dt: { value: 1 / 60 },
-      },
-      vertexShader: fluidVert,
-      fragmentShader: fluidVorticityFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${highPrecision} float;\nprecision ${highPrecision} sampler2D;\n`,
-    })
+      }),
 
-    const divergence = FboHelper.createRawShaderMaterial({
-      uniforms: { u_texelSize: { value: new Vector2() }, u_tVelocity: { value: null } },
-      vertexShader: fluidVert,
-      fragmentShader: fluidDivergenceFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${mediumPrecision} float;\nprecision ${mediumPrecision} sampler2D;\n`,
-    })
+      divergence: this.createPassMaterial(fluidDivergenceFrag, medium, {
+        ...texelSize(),
+        u_tVelocity: { value: null },
+      }),
 
-    const pressure = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
+      clear: this.createPassMaterial(fluidClearFrag, medium, {
+        ...texelSize(),
+        u_tTexture: { value: null },
+        u_value: { value: this.config.pressureDissipation },
+        u_dt: { value: 1 / 60 },
+      }),
+
+      pressure: this.createPassMaterial(fluidPressureFrag, medium, {
+        ...texelSize(),
         u_tPressure: { value: null },
         u_tDivergence: { value: null },
-      },
-      vertexShader: fluidVert,
-      fragmentShader: fluidPressureFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${mediumPrecision} float;\nprecision ${mediumPrecision} sampler2D;\n`,
-    })
+      }),
 
-    const gradientSubtract = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
+      gradientSubtract: this.createPassMaterial(fluidGradientSubtractFrag, medium, {
+        ...texelSize(),
         u_tPressure: { value: null },
         u_tVelocity: { value: null },
-      },
-      vertexShader: fluidVert,
-      fragmentShader: fluidGradientSubtractFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${mediumPrecision} float;\nprecision ${mediumPrecision} sampler2D;\n`,
-    })
+      }),
 
-    const advection = FboHelper.createRawShaderMaterial({
-      uniforms: {
-        u_texelSize: { value: new Vector2() },
-        u_tVelocity: { value: null },
-        u_tSource: { value: null },
-        u_dt: { value: 1 / 60 },
-        u_dissipation: { value: 1 },
-      },
-      defines: {
-        MANUAL_FILTERING: !this.config.linearFilteringSupported,
-      },
-      vertexShader: fluidVert,
-      fragmentShader: fluidAdvectionFrag,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShaderPrefix: `precision ${highPrecision} float;\nprecision ${highPrecision} sampler2D;\n`,
-    })
-
-    return {
-      clear,
-      splat,
-      curl,
-      vorticity,
-      divergence,
-      pressure,
-      gradientSubtract,
-      advection,
+      advection: this.createPassMaterial(
+        fluidAdvectionFrag,
+        high,
+        {
+          ...texelSize(),
+          u_tVelocity: { value: null },
+          u_tSource: { value: null },
+          u_dt: { value: 1 / 60 },
+          u_dissipation: { value: 1 },
+        },
+        // Bilinear-filter the backtraced sample in the shader. WebGL cannot linearly filter float
+        // textures everywhere, and there is no reliable capability flag for it in three, so the
+        // manual path is always on rather than probed.
+        { MANUAL_FILTERING: true }
+      ),
     }
   }
 
   private createFBOs() {
-    // velocity drives the sim (advection) and is the field the reveal samples. Force HalfFloat +
-    // Linear: smooth advection needs linear sampling, and the float-linear capability check is
-    // always undefined, so the old conditional fell back to NearestFilter and produced pixelation.
+    // Velocity drives the sim (advection) and is the field the bars sample for their tint.
+    // HalfFloat + Linear is forced rather than chosen from a capability flag: smooth advection
+    // needs linear sampling, and falling back to NearestFilter here visibly pixelates the wake.
     const velocity = new FBO(this.config.simRes, this.config.simRes, {
       format: RGBAFormat,
       type: HalfFloatType,
@@ -264,8 +240,8 @@ export class FluidSim {
     // Skip if updated too recently (60fps throttle)
     if (time - point.lastUpdate < 0.016) return
 
-    tempVector1.subVectors(point.position, point.prevPosition)
-    const distance = tempVector1.length()
+    pointerDelta.subVectors(point.position, point.prevPosition)
+    const distance = pointerDelta.length()
 
     point.velocity += distance * 2
 
@@ -283,12 +259,12 @@ export class FluidSim {
       this.materials.splat.uniforms.u_splatPosition.value.copy(point.position)
       this.materials.splat.uniforms.u_prevPoint.value.copy(shouldStartNewLine ? point.position : point.prevPosition)
       this.materials.splat.uniforms.u_splatColor.value
-        .set(tempVector1.x * this.config.aspect, tempVector1.y, 0)
+        .set(pointerDelta.x * this.config.aspect, pointerDelta.y, 0)
         .multiplyScalar(this.config.splatForce)
         .multiplyScalar(shouldStartNewLine ? 0 : 1)
       this.materials.splat.uniforms.u_splatRadius.value = this.config.splatRadius * point.velocity
 
-      FboHelper.render(this.materials.splat, this.fbos.velocity.write)
+      FBOHelper.render(this.materials.splat, this.fbos.velocity.write)
       this.fbos.velocity.swap()
 
       point.lastSplat = time
@@ -300,7 +276,7 @@ export class FluidSim {
     point.velocity = Math.min(1, point.velocity)
   }
 
-  private _update(): void {
+  private solve(): void {
     this.config.aspect = Properties.globalUniforms.u_resolution.value.x / Properties.globalUniforms.u_resolution.value.y
 
     const savedAutoClear = Properties.gl!.autoClear
@@ -310,7 +286,7 @@ export class FluidSim {
     this.updatePoint()
 
     // Idle gate: once input is stale and the field has dissipated, skip the solve to save GPU/battery.
-    if (!shouldSolveFluid(Properties.time, this.lastUserInput, this.config.idleSleepAfter)) {
+    if (!shouldSolveFluid(Properties.time, this.lastUserInput, IDLE_SLEEP_AFTER)) {
       Properties.gl!.autoClear = savedAutoClear
       Properties.gl!.setRenderTarget(savedRenderTarget)
       return
@@ -319,7 +295,7 @@ export class FluidSim {
     // Compute curl of velocity field
     this.materials.curl.uniforms.u_texelSize.value.setScalar(this.config.simTexelSize)
     this.materials.curl.uniforms.u_tVelocity.value = this.fbos.velocity.read.texture
-    FboHelper.render(this.materials.curl, this.fbos.curl)
+    FBOHelper.render(this.materials.curl, this.fbos.curl)
 
     // Apply vorticity confinement
     this.materials.vorticity.uniforms.u_texelSize.value.setScalar(this.config.simTexelSize)
@@ -327,19 +303,19 @@ export class FluidSim {
     this.materials.vorticity.uniforms.u_tCurl.value = this.fbos.curl.texture
     this.materials.vorticity.uniforms.u_curl.value = this.config.curlStrength
     this.materials.vorticity.uniforms.u_dt.value = Properties.deltaTime
-    FboHelper.render(this.materials.vorticity, this.fbos.velocity.write)
+    FBOHelper.render(this.materials.vorticity, this.fbos.velocity.write)
     this.fbos.velocity.swap()
 
     // Compute divergence of velocity field
     this.materials.divergence.uniforms.u_texelSize.value.setScalar(this.config.simTexelSize)
     this.materials.divergence.uniforms.u_tVelocity.value = this.fbos.velocity.read.texture
-    FboHelper.render(this.materials.divergence, this.fbos.divergence)
+    FBOHelper.render(this.materials.divergence, this.fbos.divergence)
 
     // Clear pressure field with dissipation
     this.materials.clear.uniforms.u_tTexture.value = this.fbos.pressure.read.texture
     this.materials.clear.uniforms.u_value.value = this.config.pressureDissipation
     this.materials.clear.uniforms.u_dt.value = Properties.deltaTime
-    FboHelper.render(this.materials.clear, this.fbos.pressure.write)
+    FBOHelper.render(this.materials.clear, this.fbos.pressure.write)
     this.fbos.pressure.swap()
 
     // Solve for pressure using Jacobi iteration
@@ -348,7 +324,7 @@ export class FluidSim {
 
     for (let iteration = 0; iteration < this.config.pressureIterations; iteration++) {
       this.materials.pressure.uniforms.u_tPressure.value = this.fbos.pressure.read.texture
-      FboHelper.render(this.materials.pressure, this.fbos.pressure.write)
+      FBOHelper.render(this.materials.pressure, this.fbos.pressure.write)
       this.fbos.pressure.swap()
     }
 
@@ -356,7 +332,7 @@ export class FluidSim {
     this.materials.gradientSubtract.uniforms.u_texelSize.value.setScalar(this.config.simTexelSize)
     this.materials.gradientSubtract.uniforms.u_tPressure.value = this.fbos.pressure.read.texture
     this.materials.gradientSubtract.uniforms.u_tVelocity.value = this.fbos.velocity.read.texture
-    FboHelper.render(this.materials.gradientSubtract, this.fbos.velocity.write)
+    FBOHelper.render(this.materials.gradientSubtract, this.fbos.velocity.write)
     this.fbos.velocity.swap()
 
     // Advect velocity through itself
@@ -365,7 +341,7 @@ export class FluidSim {
     this.materials.advection.uniforms.u_tSource.value = this.fbos.velocity.read.texture
     this.materials.advection.uniforms.u_dt.value = Properties.deltaTime
     this.materials.advection.uniforms.u_dissipation.value = this.config.velocityDissipation
-    FboHelper.render(this.materials.advection, this.fbos.velocity.write)
+    FBOHelper.render(this.materials.advection, this.fbos.velocity.write)
     this.fbos.velocity.swap()
 
     // Restore render state
@@ -377,19 +353,13 @@ export class FluidSim {
   }
 
   /* ---------------------------------- main ---------------------------------- */
-  constructor(options: Omit<FluidSimOptions, "idleSleepAfter">) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const linearFilteringSupported = (Properties.gl!.capabilities as any).floatLinearFiltering
-
+  constructor(options: FluidSimOptions) {
     this.config = {
       ...options,
-      idleSleepAfter: IDLE_SLEEP_AFTER,
-      linearFilteringSupported,
       simTexelSize: 1 / options.simRes,
       aspect: 1,
     }
 
-    this._enabled = false
     this.point = {
       position: new Vector2(0.5, 0.5),
       prevPosition: new Vector2(0.5, 0.5),
@@ -405,22 +375,22 @@ export class FluidSim {
     // setup uniform
     this.uniforms = { velocity: { value: null } }
 
-    this._update = this._update.bind(this)
+    this.solve = this.solve.bind(this)
     this.enable()
   }
 
   enable(): void {
-    if (!this._enabled) {
-      this._enabled = true
+    if (!this.isRunning) {
+      this.isRunning = true
 
-      RAFCollection.add(this._update)
+      RAFCollection.add(this.solve)
     }
   }
 
   disable(): void {
-    if (this._enabled) {
-      this._enabled = false
-      RAFCollection.remove(this._update)
+    if (this.isRunning) {
+      this.isRunning = false
+      RAFCollection.remove(this.solve)
     }
   }
 

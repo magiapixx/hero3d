@@ -1,5 +1,5 @@
 import { FloatType, RenderTargetOptions, RGBAFormat, WebGLRenderTarget } from "three"
-import { FboHelper } from "./FBOHelper"
+import { FBOHelper } from "./FBOHelper"
 
 /**
  * Ping-pong render target pair. GPGPU passes can't read and write the same texture, so
@@ -18,8 +18,8 @@ export class FBO {
       ...options,
     }
 
-    this.fbo1 = FboHelper.createRenderTarget(width, height, config)
-    this.fbo2 = FboHelper.createRenderTarget(width, height, config)
+    this.fbo1 = FBOHelper.createRenderTarget(width, height, config)
+    this.fbo2 = FBOHelper.createRenderTarget(width, height, config)
   }
 
   get read() {

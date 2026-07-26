@@ -3,7 +3,15 @@ import { Vector2, WebGLRenderer } from "three"
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
 import { QUALITY } from "../configs/XylophoneConfig"
 
-/** Shared render state and the uniform objects every material reads by reference. */
+/**
+ * Shared render state and the uniform objects every material reads by reference.
+ *
+ * Deliberately a static singleton rather than something threaded through constructors. There is
+ * exactly one renderer, one clock and one composer in this demo, and the alternative is passing
+ * the same four things into every component and pass. The tradeoff to be aware of: `gl` and
+ * `composer` are only valid after `App`'s constructor has run, which is why consumers that touch
+ * `Properties.gl` assert it non-null — they are all built after that point.
+ */
 export class Properties {
   static viewportWidth = 0
   static viewportHeight = 0

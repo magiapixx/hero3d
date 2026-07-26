@@ -1,3 +1,9 @@
+// Pipeline step 2: vorticity confinement — pushes velocity back along the curl gradient.
+//
+// A coarse grid bleeds angular momentum, so eddies flatten out within a frame or two. This adds
+// the lost swirl back, which is what keeps the cursor wake curling instead of just smearing.
+// Purely an aesthetic term: physically the solve is complete without it.
+
 varying vec2 vUv;
 varying vec2 vL;
 varying vec2 vR;

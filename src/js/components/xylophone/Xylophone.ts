@@ -68,8 +68,8 @@ export class Xylophone {
     // global
     u_time: Properties.globalUniforms.u_time,
 
-    // motion
-    u_spinSpeed: { value: 0 },
+    // motion — both are set for real in build(), once prefers-reduced-motion has been read
+    u_spinSpeed: { value: 0 }, // XYLOPHONE.spinSpeed normally, 0 under prefers-reduced-motion
     u_swingScale: { value: 1.0 }, // 0 under prefers-reduced-motion
     u_swingAxis: { value: new Vector3(0, 1, 0) },
 

@@ -1,3 +1,8 @@
+// Pipeline step 3: divergence — net flow in or out of each texel.
+//
+// Incompressible fluid must have zero divergence everywhere; advection and the splat both break
+// that. This measures the error so the pressure solve can correct it.
+
 varying highp vec2 vL;
 varying highp vec2 vR;
 varying highp vec2 vT;

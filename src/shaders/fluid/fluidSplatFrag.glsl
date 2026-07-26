@@ -1,3 +1,8 @@
+// Pipeline step 0 (input): injects the pointer's motion into the velocity field.
+//
+// Runs only when the cursor moved, before the solve. Everything downstream just redistributes
+// what this writes, so with no pointer movement the field decays to nothing.
+
 uniform sampler2D u_tTarget;
 uniform float u_aspectRatio;
 uniform vec3 u_splatColor;

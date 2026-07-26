@@ -10,7 +10,7 @@ import {
 } from "three"
 import glassNormalFrag from "../shaders/xylophone/glassNormalFrag.glsl?raw"
 import xylophoneVert from "../shaders/xylophone/xylophoneVert.glsl?raw"
-import { FboHelper } from "./common/FBOHelper"
+import { FBOHelper } from "./common/FBOHelper"
 import { FluidSim } from "./components/FluidSim"
 import { Xylophone } from "./components/xylophone/Xylophone"
 import { XylophoneBg } from "./components/XylophoneBg"
@@ -39,8 +39,8 @@ class App {
   // passes — composited in this order
   private readonly frostBackdropPass: FrostBackdropPass
   private readonly renderPass: RenderPass
-  private readonly normalPass: GlassBufferPass
-  private readonly normalMaterial: ShaderMaterial
+  private readonly glassBufferPass: GlassBufferPass
+  private readonly glassNormalMaterial: ShaderMaterial
   private readonly ssaoEffect: SSAOEffect
   private readonly ssaoPass: EffectPass
   private readonly aaPass: EffectPass
@@ -108,7 +108,7 @@ class App {
    * so we re-render the bars with the same vertex shader and share the animation uniforms —
    * the buffer then tracks the live pose. Depth comes from the main render pass.
    */
-  private createNormalMaterial() {
+  private createGlassNormalMaterial() {
     const u = this.xylophone.uniforms
 
     return new ShaderMaterial({
@@ -163,7 +163,7 @@ class App {
     folder.add(this.xylophoneBg.uniforms.u_debugPattern, "value", 0, 1, 1).name("bg test pattern")
   }
 
-  /* --------------------------------- resize --------------------------------- */
+  /* ---------------------------------- main ---------------------------------- */
   constructor() {
     Properties.viewportWidth = window.innerWidth
     Properties.viewportHeight = window.innerHeight
@@ -176,9 +176,9 @@ class App {
     this.camera.position.set(0, 0, 5)
 
     Input.init()
-    FboHelper.init()
+    FBOHelper.init()
 
-    // setup compnents
+    // setup components
     this.scene.add(this.xylophone.group)
     this.scene.add(this.xylophoneBg.build())
 
@@ -186,19 +186,24 @@ class App {
     this.xylophone.setFluid(this.fluid.uniforms.velocity)
 
     // setup passes
-    // frostBackdrop -> render -> normal -> ssao -> aa
+    // frostBackdrop -> render -> glassBuffer -> ssao -> aa
     this.frostBackdropPass = this.createFrostPass()
     this.renderPass = new RenderPass(this.scene, this.camera)
-    this.normalMaterial = this.createNormalMaterial()
-    this.normalPass = new GlassBufferPass(this.scene, this.camera, this.normalMaterial, QUALITY.glassBufferScale)
-    this.ssaoEffect = new SSAOEffect(this.camera, this.normalPass.glassTexture, SSAO)
+    this.glassNormalMaterial = this.createGlassNormalMaterial()
+    this.glassBufferPass = new GlassBufferPass(
+      this.scene,
+      this.camera,
+      this.glassNormalMaterial,
+      QUALITY.glassBufferScale
+    )
+    this.ssaoEffect = new SSAOEffect(this.camera, this.glassBufferPass.glassTexture, SSAO)
     this.ssaoPass = new EffectPass(this.camera, this.ssaoEffect)
     this.aaPass = new EffectPass(
       this.camera,
       new SMAAEffect({ preset: QUALITY.isMobile ? SMAAPreset.MEDIUM : SMAAPreset.ULTRA })
     )
 
-    for (const pass of [this.frostBackdropPass, this.renderPass, this.normalPass, this.ssaoPass, this.aaPass]) {
+    for (const pass of [this.frostBackdropPass, this.renderPass, this.glassBufferPass, this.ssaoPass, this.aaPass]) {
       Properties.composer.addPass(pass)
     }
 
@@ -265,12 +270,12 @@ class App {
     Input.destroy()
     this.soundToggle.destroy()
 
-    for (const pass of [this.frostBackdropPass, this.renderPass, this.normalPass, this.ssaoPass, this.aaPass]) {
+    for (const pass of [this.frostBackdropPass, this.renderPass, this.glassBufferPass, this.ssaoPass, this.aaPass]) {
       Properties.composer.removePass(pass)
       pass.dispose()
     }
 
-    this.normalMaterial.dispose()
+    this.glassNormalMaterial.dispose()
     this.fluid.dispose()
     this.xylophone.dispose()
     this.xylophoneBg.dispose()

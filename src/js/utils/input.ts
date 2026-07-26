@@ -1,5 +1,5 @@
 import { MathUtils, Vector2 } from "three"
-import { normalizeWheel } from "./normalizeWheel"
+import { normalizeWheelY } from "./normalizeWheel"
 import { Properties } from "./properties"
 
 const MAX_SCROLL_PER_EVENT = 200 // one violent wheel notch shouldn't jump the whole helix
@@ -36,7 +36,7 @@ export class Input {
   /* -------------------------------- handlers -------------------------------- */
   private static readonly onMouseMove = (e: MouseEvent) => this.onMove(e)
   private static readonly onWheel = (e: WheelEvent) => {
-    this.deltaScrollY += MathUtils.clamp(normalizeWheel(e).pixelY, -MAX_SCROLL_PER_EVENT, MAX_SCROLL_PER_EVENT)
+    this.deltaScrollY += MathUtils.clamp(normalizeWheelY(e), -MAX_SCROLL_PER_EVENT, MAX_SCROLL_PER_EVENT)
   }
 
   private static readonly onTouchStart = (e: TouchEvent) => {

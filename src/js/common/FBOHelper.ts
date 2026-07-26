@@ -17,7 +17,7 @@ import { Properties } from "../utils/properties"
 /* -------------------------------------------------------------------------- */
 /*                                    main                                    */
 /* -------------------------------------------------------------------------- */
-export class FboHelper {
+export class FBOHelper {
   static fsQuad: FullScreenQuad
 
   // prescision

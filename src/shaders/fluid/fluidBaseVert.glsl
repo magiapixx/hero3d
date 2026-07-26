@@ -1,3 +1,9 @@
+// Shared vertex shader for every fluid pass.
+//
+// Beyond the uv, it precomputes the four neighbour coordinates (left/right/top/bottom) that the
+// finite-difference passes need. Doing it here rather than in each fragment shader means the
+// interpolator hands them over for free instead of every fragment recomputing four offsets.
+
 attribute vec2 position;
 
 uniform vec2 u_texelSize;

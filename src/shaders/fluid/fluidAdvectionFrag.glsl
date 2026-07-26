@@ -1,3 +1,11 @@
+// Pipeline step 6: advection — the field carries itself downstream.
+//
+// Semi-Lagrangian: instead of pushing each texel forward (which leaves gaps), trace backwards
+// along the velocity to find where this texel's contents came from, and sample there.
+//
+// MANUAL_FILTERING does that sample with an explicit bilinear fetch rather than relying on the
+// hardware's, for platforms that cannot linearly filter float textures.
+
 varying vec2 vUv;
 uniform sampler2D u_tVelocity;
 uniform sampler2D u_tSource;

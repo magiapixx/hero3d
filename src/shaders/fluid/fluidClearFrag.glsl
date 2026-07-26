@@ -1,3 +1,6 @@
+// Fades a field toward zero by a per-second factor. Used on pressure between frames so stale
+// pressure does not accumulate across the Jacobi iterations of the next solve.
+
 varying vec2 vUv;
 uniform sampler2D u_tTexture;
 uniform float u_value;
