@@ -1,14 +1,10 @@
 # WebGL Xylophone
 
-An interactive WebGL xylophone: a scrolling helix of frosted glass bars that ring as you sweep the cursor across them. The bars are a single instanced draw call, the frost samples a blurred copy of the backdrop, and a GPU fluid simulation turns cursor movement into the colour wake that washes over them.
+A scrolling helix of frosted glass bars that ring as you sweep across them, built in Three.js with instancing, a fluid simulation, and glass faked entirely in the shader.
 
-<!-- TODO: replace with the hero image Codrops hosts for the article -->
+![WebGL Xylophone Demo](https://tympanus.net/codrops/wp-content/uploads/2026/07/Home.png)
 
-![WebGL Xylophone Demo](https://tympanus.net/codrops/wp-content/uploads/xylophone.webp)
-
-<!-- TODO: append the published post id, e.g. ?p=108307 -->
-
-[Article on Codrops](https://tympanus.net/codrops/?p=)
+[Article on Codrops](https://tympanus.net/codrops/?p=118008)
 
 [Demo](https://tympanus.net/Tutorials/WebGLXylophone/)
 
