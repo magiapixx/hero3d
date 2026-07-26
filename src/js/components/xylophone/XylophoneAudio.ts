@@ -2,7 +2,7 @@
 /*                                    types                                   */
 /* -------------------------------------------------------------------------- */
 type XylophoneAudioOptions = {
-  /** URL of the recorded note sample (under public/). */
+  /** Resolved URL of the recorded note sample (imported from src/assets, hashed by Vite). */
   url: string
   /** Number of bars / notes to tune. */
   count: number

@@ -1,11 +1,12 @@
 {
   "name": "webgl-xylophone",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit && eslint src"
   },
   "license": "MIT",
   "type": "module",

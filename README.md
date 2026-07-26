@@ -1,20 +1,25 @@
-# WebGL Snake Animation
+# WebGL Xylophone
 
-This project explores procedural snake motion using steering forces, endless curve generation, and instanced GPU rendering to create smooth, responsive movement in real time.
+An interactive WebGL xylophone: a scrolling helix of frosted glass bars that ring as you sweep the cursor across them. The bars are a single instanced draw call, the frost samples a blurred copy of the backdrop, and a GPU fluid simulation turns cursor movement into the colour wake that washes over them.
 
-![WebGL Snake Demo](https://tympanus.net/codrops/wp-content/uploads/2026/02/snake.webp)
+<!-- TODO: replace with the hero image Codrops hosts for the article -->
 
-[Article on Codrops](https://tympanus.net/codrops/?p=108307)
+![WebGL Xylophone Demo](https://tympanus.net/codrops/wp-content/uploads/xylophone.webp)
 
-[Demo](https://tympanus.net/Tutorials/WebGLSnakeAnimation/)
+<!-- TODO: append the published post id, e.g. ?p=108307 -->
+
+[Article on Codrops](https://tympanus.net/codrops/?p=)
+
+[Demo](https://tympanus.net/Tutorials/WebGLXylophone/)
 
 ## Features
 
-- **Procedural Motion**: Steering-based direction blended in real time
-- **Endless Curve Path**: Incremental Bézier generation with sliding-window management
-- **Stable Orientation**: Parallel transport frames for twist-free surface alignment
-- **GPU Instanced Rendering**: Efficient body rendering driven entirely by shaders
-- **Anatomical Shaping & Lighting**: Non-uniform profile, subtle twist, and scale-like surface detail
+- **Instanced Glass Helix**: 64 bars drawn in one call, posed entirely from instance attributes
+- **Scroll Conveyor**: advancing the scroll phase wraps bars around a finite ring, so a fixed count reads as an endless column
+- **Frosted Transmission**: the backdrop is rendered and Gaussian-blurred into its own buffer, then refracted through each bar with fresnel and thin-film iridescence
+- **Fluid Hover Wake**: a low-res GPU fluid solve drives the colour tint, and sleeps itself when the pointer goes idle
+- **GPU-Geometry Picking**: the bars exist only on the GPU, so hit testing rebuilds each instance's matrix on the CPU and tests one bounding box per bar — allocation-free, no per-triangle work
+- **Polyphonic Web Audio**: one recorded sample pitch-shifted across a major-pentatonic scale, one voice per strike, with a voice cap for fast sweeps
 
 ## Development
 
@@ -25,6 +30,12 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+Type-check and lint:
+
+```bash
+npm run lint
+```
 
 ## Building for Production
 
@@ -41,6 +52,9 @@ npm run preview
 ```
 
 ## Credits
+
+- Fluid solver adapted from [WebGL-Fluid-Simulation](https://github.com/PavelDoGreat/WebGL-Fluid-Simulation) by Pavel Dobryakov (MIT)
+- Built with [three.js](https://threejs.org/) and [postprocessing](https://github.com/pmndrs/postprocessing)
 
 ## Misc
 

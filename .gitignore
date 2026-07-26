@@ -28,3 +28,7 @@ pnpm-debug.log*
 # test
 playwright-report/
 test-results/
+_test/
+
+# authoring notes, tutorial drafts, screenshots — not part of the demo
+.docs/

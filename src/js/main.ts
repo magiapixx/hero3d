@@ -14,7 +14,7 @@ import { FboHelper } from "./common/FBOHelper"
 import { FluidSim } from "./components/FluidSim"
 import { Xylophone } from "./components/xylophone/Xylophone"
 import { XylophoneBg } from "./components/XylophoneBg"
-import { FLUID, FROST, SSAO } from "./configs/XylophoneConfig"
+import { FLUID, FROST, QUALITY, SSAO } from "./configs/XylophoneConfig"
 import { FrostBackdropPass } from "./passes/FrostBackdropPass"
 import { GlassBufferPass } from "./passes/GlassBufferPass"
 import { SoundToggle } from "./ui/SoundToggle"
@@ -144,7 +144,6 @@ class App {
     folder.add(u.u_fluidStrength, "value", 0, 3, 0.01).name("fluid strength")
     folder.add(u.u_tintStrength, "value", 0, 1, 0.01).name("tint strength")
     folder.add(u.u_tintGlow, "value", 0, 1, 0.01).name("tint glow")
-    folder.add(u.u_hasEnvMap, "value", 0, 1, 1).name("use env map")
 
     const irid = folder.addFolder("Iridescence")
     irid.add(u.u_iridStrength, "value", 0, 2, 0.01).name("strength")
@@ -191,10 +190,13 @@ class App {
     this.frostBackdropPass = this.createFrostPass()
     this.renderPass = new RenderPass(this.scene, this.camera)
     this.normalMaterial = this.createNormalMaterial()
-    this.normalPass = new GlassBufferPass(this.scene, this.camera, this.normalMaterial, 1)
+    this.normalPass = new GlassBufferPass(this.scene, this.camera, this.normalMaterial, QUALITY.glassBufferScale)
     this.ssaoEffect = new SSAOEffect(this.camera, this.normalPass.glassTexture, SSAO)
     this.ssaoPass = new EffectPass(this.camera, this.ssaoEffect)
-    this.aaPass = new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.ULTRA }))
+    this.aaPass = new EffectPass(
+      this.camera,
+      new SMAAEffect({ preset: QUALITY.isMobile ? SMAAPreset.MEDIUM : SMAAPreset.ULTRA })
+    )
 
     for (const pass of [this.frostBackdropPass, this.renderPass, this.normalPass, this.ssaoPass, this.aaPass]) {
       Properties.composer.addPass(pass)
@@ -207,7 +209,9 @@ class App {
     this.soundToggle = new SoundToggle((muted) => this.xylophone.setMuted(muted))
     this.soundToggle.mount()
 
-    void this.xylophone.load()
+    // The loader covers the page until the bars exist. `load()` swallows its own asset failures,
+    // so the overlay can't get stuck on a failed fetch.
+    void this.xylophone.load().then(() => document.body.classList.remove("loading"))
     void this.setupDebug()
 
     this.update()
@@ -281,8 +285,15 @@ window.addEventListener("load", () => {
   app = new App()
 })
 
-// pagehide, not beforeunload — beforeunload doesn't fire reliably on mobile Safari
-window.addEventListener("pagehide", () => {
+// pagehide, not beforeunload — beforeunload doesn't fire reliably on mobile Safari.
+//
+// `persisted` means the page is going into the back/forward cache rather than being torn down,
+// so it can be restored by a back navigation with no `load` event to rebuild us. Tearing the app
+// down there would strand a dead canvas on return; the browser freezes our rAF while cached, so
+// staying alive costs nothing.
+window.addEventListener("pagehide", (event) => {
+  if (event.persisted) return
+
   app?.destroy()
   app = null
 })

@@ -14,10 +14,11 @@
     <script>
       document.documentElement.className = "js"
     </script>
-    <!--script src="//tympanus.net/codrops/adpacks/analytics.js"></script-->
+    <!-- <script src="//tympanus.net/codrops/adpacks/analytics.js"></script> -->
   </head>
 
-  <body class="demo-1">
+  <!-- `loading` draws the overlay + bar loader in base.css; main.ts drops it once the bars exist -->
+  <body class="demo-1 loading">
     <noscript>
       <div style="padding: 2rem; text-align: center; color: #fff; background: #000">
         <h1>JavaScript Required</h1>
@@ -37,14 +38,6 @@
           <a href="https://tympanus.net/codrops/hub/">All demos</a>
           <a href="https://github.com/codrops/">GitHub</a>
         </nav>
-        <nav class="frame__tags">
-          <a href="https://tympanus.net/codrops/hub/tag/scroll/">#scroll</a>
-          <a href="https://tympanus.net/codrops/hub/tag/three-js/">#three.js</a>
-          <a href="https://tympanus.net/codrops/hub/tag/webgl/">#webgl</a>
-        </nav>
-      </header>
-      <div class="content">
-        <!-- the demo overrides the iOS ringer switch, so it owes the user a way to silence it -->
         <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="true">
           <svg class="sound-toggle__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M4 9v6h4l5 4V5L8 9H4z" />
@@ -54,9 +47,14 @@
           </svg>
           <span class="sound-toggle__text">Sound on</span>
         </button>
-      </div>
+        <nav class="frame__tags">
+          <a href="https://tympanus.net/codrops/hub/tag/scroll/">#scroll</a>
+          <a href="https://tympanus.net/codrops/hub/tag/three-js/">#three.js</a>
+          <a href="https://tympanus.net/codrops/hub/tag/webgl/">#webgl</a>
+        </nav>
+      </header>
     </main>
-    <!--script src="https://tympanus.net/codrops/adpacks/cda_sponsor.js"></script-->
+    <!-- <script src="https://tympanus.net/codrops/adpacks/cda_sponsor.js"></script> -->
     <script type="module" src="./js/main.ts"></script>
   </body>
 </html>

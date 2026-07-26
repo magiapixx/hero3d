@@ -9,10 +9,6 @@ uniform float u_tintStrength;
 uniform float u_tintGlow;
 uniform float u_tintWrap;
 
-// envmap
-uniform sampler2D u_tEnvMap;
-uniform float u_hasEnvMap;
-
 // background
 uniform sampler2D u_tBackdrop;
 uniform float u_transmission;
@@ -44,23 +40,19 @@ vec3 iridescence(float t) {
 /* -------------------------------------------------------------------------- */
 /*                          env sampling (edge sheen)                         */
 /* -------------------------------------------------------------------------- */
-vec2 equirectUv(vec3 dir) {
-  return vec2(atan(dir.z, dir.x) / (2.0 * PI) + 0.5, asin(clamp(dir.y, -1.0, 1.0)) / PI + 0.5);
-}
-
+/**
+ * Ground -> horizon -> sky ramp, used for the fresnel edge sheen.
+ *
+ * This stands in for an environment map. The sheen is mixed in at 0.35 * fresnel and so only
+ * reads at grazing angles, where a real HDR's detail is indistinguishable from a gradient —
+ * not worth a megabyte of equirect texture.
+ */
 vec3 proceduralEnv(vec3 dir) {
   float t = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
   vec3 ground = vec3(0.12, 0.12, 0.14);
   vec3 horizon = vec3(0.60, 0.62, 0.68);
   vec3 sky = vec3(0.95, 0.97, 1.0);
   return t < 0.5 ? mix(ground, horizon, t * 2.0) : mix(horizon, sky, (t - 0.5) * 2.0);
-}
-
-vec3 sampleEnv(vec3 dir) {
-  if (u_hasEnvMap < 0.5)
-    return proceduralEnv(dir);
-
-  return texture2D(u_tEnvMap, equirectUv(dir)).rgb;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -102,7 +94,7 @@ void main() {
   float fres = pow(edge, u_fresnelPower);
 
   // add sheen
-  vec3 sheen = sampleEnv(reflect(-V, N));
+  vec3 sheen = proceduralEnv(reflect(-V, N));
   vec3 color = mix(frosted, sheen, fres * 0.35);
   color += fres * 0.06; // subtle rim lift
 

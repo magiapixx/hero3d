@@ -3,7 +3,6 @@ import {
   CanvasTexture,
   ClampToEdgeWrapping,
   DoubleSide,
-  EquirectangularReflectionMapping,
   Euler,
   Group,
   LinearFilter,
@@ -17,9 +16,8 @@ import {
   Texture,
   Vector3,
 } from "three"
-import { GLTFLoader, HDRLoader } from "three/examples/jsm/Addons.js"
+import { GLTFLoader } from "three/examples/jsm/Addons.js"
 import audioUrl from "../../../assets/audio/do.wav?url"
-import envMapUrl from "../../../assets/envmap/kloppenheim_06_puresky_1k.hdr?url"
 import modelUrl from "../../../assets/models/xylophone-09.glb?url"
 import xylophoneFrag from "../../../shaders/xylophone/xylophoneFrag.glsl?raw"
 import xylophoneVert from "../../../shaders/xylophone/xylophoneVert.glsl?raw"
@@ -82,10 +80,6 @@ export class Xylophone {
     u_tintStrength: { value: 1.0 },
     u_tintGlow: { value: 0.15 },
     u_tintWrap: { value: XYLOPHONE.tintWrap },
-
-    // envmap
-    u_tEnvMap: { value: null as Texture | null },
-    u_hasEnvMap: { value: 1 },
 
     // frosted transmission
     u_tBackdrop: { value: null as Texture | null },
@@ -185,18 +179,6 @@ export class Xylophone {
   }
 
   /* ---------------------------------- load ---------------------------------- */
-  private async loadEnvMap() {
-    try {
-      const envMap = await new HDRLoader().loadAsync(envMapUrl)
-      envMap.mapping = EquirectangularReflectionMapping
-      this.uniforms.u_tEnvMap.value = envMap
-    } catch (err) {
-      // the fragment shader falls back to a procedural sky when this stays unset
-      console.warn("[Xylophone] env map failed to load — using procedural sky", err)
-      this.uniforms.u_hasEnvMap.value = 0
-    }
-  }
-
   private async loadBars() {
     let modelGeometry: BufferGeometry
     try {
@@ -251,8 +233,6 @@ export class Xylophone {
     this.group.rotation.set(MathUtils.degToRad(XYLOPHONE.group.rotXDeg), 0, MathUtils.degToRad(XYLOPHONE.group.rotZDeg))
     this.group.updateMatrixWorld()
 
-    // the bars are required; the envmap is a nice-to-have, so let it fail on its own
-    void this.loadEnvMap()
     await this.loadBars()
   }
 
@@ -268,7 +248,6 @@ export class Xylophone {
     this.instances?.geometry.dispose()
     this.material?.dispose()
     this.uniforms.u_tGradient.value?.dispose()
-    this.uniforms.u_tEnvMap.value?.dispose()
 
     if (this.mesh) this.group.remove(this.mesh)
   }

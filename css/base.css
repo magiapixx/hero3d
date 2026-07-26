@@ -195,20 +195,6 @@ a {
   }
 }
 
-.content {
-  padding: var(--page-padding);
-  display: flex;
-  flex-direction: column;
-  width: 100vw;
-  position: relative;
-
-  @media screen and (min-width: 53em) {
-    min-height: 100vh;
-    justify-content: center;
-    align-items: center;
-  }
-}
-
 /* -------------------------------------------------------------------------- */
 /*                                   custom                                   */
 /* -------------------------------------------------------------------------- */
@@ -247,11 +233,9 @@ body {
 /* -------------------------------------------------------------------------- */
 /*                                    sound                                   */
 /* -------------------------------------------------------------------------- */
+/* Sits in the frame's `demos` area rather than pinned to a corner — the bottom-right corner
+   belongs to #cdawrap, and a fixed button there overlaps the sponsor once it is injected. */
 .sound-toggle {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-
   grid-area: demos;
   display: flex;
   align-items: center;
@@ -266,6 +250,10 @@ body {
   &:hover .sound-toggle__icon,
   &:focus-visible .sound-toggle__icon {
     opacity: 1;
+  }
+
+  @media screen and (min-width: 53em) {
+    justify-self: end;
   }
 }
 

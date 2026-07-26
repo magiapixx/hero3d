@@ -20,7 +20,9 @@ export default defineConfig({
         manualChunks: { three: ["three"] }, // own chunk so app edits don't bust the three cache
       },
     },
-    // 1MB HDR envmap — the default 4MB warning threshold is fine, but don't inline anything big
+    // three is ~550kB minified and deliberately its own chunk — don't warn about a known size
+    chunkSizeWarningLimit: 600,
+    // keep the model + audio sample as separate hashed files rather than inlining them as base64
     assetsInlineLimit: 4096,
     sourcemap: false,
   },

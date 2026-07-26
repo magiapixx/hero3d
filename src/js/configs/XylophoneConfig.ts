@@ -1,4 +1,20 @@
 /* -------------------------------------------------------------------------- */
+/*                                   quality                                  */
+/* -------------------------------------------------------------------------- */
+// Coarse pointer + small viewport ≈ phone. A 2x pixel ratio, a full-res view-normal buffer and
+// ULTRA SMAA together are more than a phone GPU holds at 60fps, so the tier scales them back
+// instead of letting the frame rate collapse. Everything else (fluid, frost) is already cheap.
+const isMobile =
+  (window.matchMedia?.("(pointer: coarse)").matches ?? false) && Math.min(window.innerWidth, window.innerHeight) < 900
+
+export const QUALITY = {
+  isMobile,
+  maxDpr: isMobile ? 1.5 : 2,
+  /** view-normal buffer size, as a fraction of the screen */
+  glassBufferScale: isMobile ? 0.5 : 1,
+} as const
+
+/* -------------------------------------------------------------------------- */
 /*                                   layers                                   */
 /* -------------------------------------------------------------------------- */
 // Passes isolate content by narrowing the camera's layer mask, not by swapping scenes.
@@ -66,5 +82,5 @@ export const SSAO = {
   worldDistanceFalloff: 5,
   worldProximityThreshold: 3,
   worldProximityFalloff: 1,
-  resolutionScale: 1,
+  resolutionScale: QUALITY.isMobile ? 0.5 : 1,
 } as const

@@ -1,12 +1,13 @@
 import { EffectComposer } from "postprocessing"
 import { Vector2, WebGLRenderer } from "three"
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js"
+import { QUALITY } from "../configs/XylophoneConfig"
 
 /** Shared render state and the uniform objects every material reads by reference. */
 export class Properties {
   static viewportWidth = 0
   static viewportHeight = 0
-  static dpr = Math.min(2, window.devicePixelRatio || 1)
+  static dpr = Math.min(QUALITY.maxDpr, window.devicePixelRatio || 1)
   static reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
 
   static gl?: WebGLRenderer
