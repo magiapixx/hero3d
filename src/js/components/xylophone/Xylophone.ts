@@ -71,7 +71,7 @@ export class Xylophone {
     u_time: Properties.globalUniforms.u_time,
 
     // motion
-    u_spinSpeed: { value: XYLOPHONE.spinSpeed },
+    u_spinSpeed: { value: 0 },
     u_swingScale: { value: 1.0 }, // 0 under prefers-reduced-motion
     u_swingAxis: { value: new Vector3(0, 1, 0) },
 
@@ -222,8 +222,8 @@ export class Xylophone {
     this.uniforms.u_tGradient.value = buildGradientTexture()
 
     // prefers-reduced-motion suppresses the strike swing, not the interaction
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-    this.uniforms.u_swingScale.value = reduceMotion ? 0 : 1
+    this.uniforms.u_swingScale.value = Properties.reduceMotion ? 0 : 1
+    this.uniforms.u_spinSpeed.value = Properties.reduceMotion ? 0 : XYLOPHONE.spinSpeed
 
     this.material = new ShaderMaterial({
       uniforms: this.uniforms,

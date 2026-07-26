@@ -7,6 +7,7 @@ export class Properties {
   static viewportWidth = 0
   static viewportHeight = 0
   static dpr = Math.min(2, window.devicePixelRatio || 1)
+  static reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
 
   static gl?: WebGLRenderer
   static composer = new EffectComposer()
