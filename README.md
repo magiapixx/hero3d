@@ -6,7 +6,7 @@ A scrolling helix of frosted glass bars that ring as you sweep across them, buil
 
 [Article on Codrops](https://tympanus.net/codrops/?p=118008)
 
-[Demo](https://tympanus.net/Tutorials/WebGLXylophone/)
+[Demo](https://tympanus.net/Tutorials/Xylophone/)
 
 ## Features
 
