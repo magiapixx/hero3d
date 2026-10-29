@@ -5,63 +5,87 @@
 }
 
 :root {
-  font-size: 12px;
-  --color-text: #000;
-  --color-bg: #fff;
-  --color-link: #000;
-  --color-link-hover: #000;
-  --page-padding: 1.5rem;
+  /*
+    The hero backdrop is light lavender in every color scheme, so the ink stays dark too. Its
+    bottom-right corner is a mid-tone violet that no saturated hue reads against, so the accent
+    is carried by an italic serif instead of a color.
+  */
+  --ink: #16112b;
+  --ink-soft: rgb(22 17 43 / 0.8);
+  --accent: var(--ink);
+  --line: rgb(22 17 43 / 0.24);
+  --bg: #ebe6f6;
+  --hero-bg: linear-gradient(135deg, #f7f5fc 0%, #d6cdee 48%, #9278d2 100%);
+
+  --pad: clamp(16px, 1.35vw, 32px);
+  --fs-ui: clamp(12px, 0.88vw, 17px);
+  --font: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  background: var(--bg);
+  overscroll-behavior: none;
 }
 
 body {
   margin: 0;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  /* the demo owns the vertical drag (it scrolls the helix), so suppress native scroll/overscroll */
-  touch-action: none;
-  overscroll-behavior: none;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   loader                                   */
+/* -------------------------------------------------------------------------- */
+/* Always present but hidden, so dropping `loading` fades the overlay out instead of cutting it. */
 @media (scripting: enabled) {
-  .loading {
-    &::before,
-    &::after {
-      content: "";
-      position: fixed;
-      z-index: 10000;
-    }
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.9s var(--ease-out),
+      visibility 0s linear 0.9s;
+  }
 
-    &::before {
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--color-bg);
-    }
+  body::before {
+    inset: 0;
+    background: var(--bg);
+  }
 
-    &::after {
-      top: 50%;
-      left: 50%;
-      width: 100px;
-      height: 1px;
-      margin: 0 0 0 -50px;
-      background: var(--color-link);
-      animation: loaderAnim 1.5s ease-in-out infinite alternate forwards;
-    }
+  body::after {
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 1px;
+    margin: 0 0 0 -50px;
+    background: var(--ink);
+    animation: loaderAnim 1.5s ease-in-out infinite alternate forwards;
+  }
+
+  .loading::before,
+  .loading::after {
+    opacity: 1;
+    visibility: visible;
+    transition: none;
   }
 }
 
@@ -87,204 +111,411 @@ body {
   }
 }
 
-a {
-  text-decoration: none;
-  color: var(--color-link);
-  outline: none;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-    color: var(--color-link-hover);
-  }
-
-  &:focus {
-    outline: none;
-    background: lightgrey;
-
-    &:not(:focus-visible) {
-      background: transparent;
-    }
-
-    &:focus-visible {
-      outline: 2px solid red;
-      background: transparent;
-    }
-  }
-}
-
-.frame {
-  padding: var(--page-padding);
-  display: grid;
-  z-index: 1000;
-  position: relative;
-  gap: 1rem;
-  pointer-events: none;
-  justify-items: start;
-  grid-template-columns: 100%;
-  grid-template-areas:
-    "title"
-    "links"
-    "demos"
-    "tags"
-    "sponsor";
-
-  #cdawrap {
-    justify-self: start;
-    grid-area: sponsor;
-  }
-
-  a,
-  button {
-    pointer-events: auto;
-    touch-action: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .frame__title {
-    grid-area: title;
-    font-size: inherit;
-    margin: 0;
-  }
-
-  .frame__tags {
-    grid-area: tags;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .frame__links,
-  .frame__demos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .frame__links {
-    grid-area: links;
-  }
-
-  .frame__demos {
-    grid-area: demos;
-  }
-
-  @media screen and (min-width: 53em) {
-    height: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    grid-template-columns: auto auto 1fr;
-    grid-template-rows: auto auto;
-    align-content: space-between;
-    grid-template-areas:
-      "title links demos"
-      "tags tags sponsor";
-
-    .frame__tags {
-      align-self: end;
-    }
-
-    .frame__demos,
-    #cdawrap {
-      justify-self: end;
-      text-align: right;
-      max-width: 300px;
-    }
-  }
-}
-
 /* -------------------------------------------------------------------------- */
-/*                                   custom                                   */
+/*                                    hero                                    */
 /* -------------------------------------------------------------------------- */
-
-#sizer {
-  position: fixed;
+/*
+  One grid carries every alignment: the two dashed columns (col-2, col-3), the inset the menu and
+  lead share (col-3-inset), and the menu's first stop (menu-1). Rows split at the two dashed lines.
+*/
+.hero {
+  position: sticky; /* pinned inside .hero-stage while the scroll exit plays */
   top: 0;
-  left: 0;
-  height: 100vh;
-  width: 100vw;
-  pointer-events: none;
-  user-select: none;
-  visibility: hidden;
-  opacity: 0;
-}
-
-html,
-body {
-  height: 100%;
   overflow: hidden;
-  overscroll-behavior: none;
+  display: grid;
+  grid-template-columns:
+    [edge-start] var(--pad)
+    [content-start] calc(21.2% - var(--pad))
+    [menu-1] 12.65%
+    [col-2] 14.05%
+    [col-3] 3.9%
+    [col-3-inset] 1fr
+    [content-end] var(--pad)
+    [edge-end];
+  grid-template-rows: [row-1] 36.4% [row-2] 27.2% [row-3] 1fr [rows-end];
+  height: 100vh;
+  height: 100svh;
+  min-height: 480px;
+  background: var(--hero-bg);
+  font-size: var(--fs-ui);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
 }
 
-body {
-  position: fixed;
-  inset: 0;
-  touch-action: none;
+/* ----------------------------------- grid ---------------------------------- */
+.hero__lines {
+  display: contents;
 }
 
-.frame {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
+.hero__line {
+  pointer-events: none;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                    sound                                   */
-/* -------------------------------------------------------------------------- */
-/* Sits in the frame's `demos` area rather than pinned to a corner — the bottom-right corner
-   belongs to #cdawrap, and a fixed button there overlaps the sponsor once it is injected. */
-.sound-toggle {
-  grid-area: demos;
-  display: flex;
+.hero__line--v1,
+.hero__line--v2 {
+  grid-row: row-1 / rows-end;
+  justify-self: start;
+  width: 1px;
+  background: repeating-linear-gradient(to bottom, var(--line) 0 3px, transparent 3px 7px);
+}
+
+.hero__line--v1 {
+  grid-column: col-2;
+}
+
+.hero__line--v2 {
+  grid-column: col-3;
+}
+
+.hero__line--h1,
+.hero__line--h2 {
+  grid-column: edge-start / edge-end;
+  align-self: start;
+  height: 1px;
+  background: repeating-linear-gradient(to right, var(--line) 0 3px, transparent 3px 7px);
+}
+
+.hero__line--h1 {
+  grid-row: row-2;
+}
+
+.hero__line--h2 {
+  grid-row: row-3;
+}
+
+/* ---------------------------------- header --------------------------------- */
+.hero__header {
+  grid-column: edge-start / edge-end;
+  grid-row: row-1;
+  align-self: start;
+  display: grid;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
+  padding-top: var(--pad);
+}
 
-  &:hover .sound-toggle__icon,
-  &:focus-visible .sound-toggle__icon {
-    opacity: 1;
+.logo {
+  grid-column: content-start / menu-1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  font-size: clamp(14px, 1.05vw, 20px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.logo__mark {
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentColor;
+}
+
+.menu {
+  grid-column: menu-1 / content-end;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.menu__link {
+  position: relative;
+  grid-row: 1; /* links 2 and 3 share a cell — without this, auto-placement drops 3 to a new row */
+  justify-self: start;
+  padding-block: 4px;
+  text-transform: uppercase;
+
+  &:nth-child(1) {
+    grid-column: menu-1 / col-3;
   }
 
-  @media screen and (min-width: 53em) {
+  &:nth-child(2) {
+    grid-column: col-3-inset;
+  }
+
+  &:nth-child(3) {
+    grid-column: col-3-inset;
     justify-self: end;
   }
-}
 
-.sound-toggle__icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  opacity: 0.7;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  transition: opacity 0.2s;
+  /* underline wipes in from the left, out to the right */
+  &::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform 0.5s var(--ease-out);
+  }
 
-  /* the speaker body reads as a solid shape; only the waves and slash are strokes */
-  path:first-child {
-    fill: currentColor;
-    stroke-linejoin: round;
+  &:hover::after,
+  &:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: 0% 50%;
   }
 }
 
-/* waves when audible, slash when muted */
-.sound-toggle__slash {
-  display: none;
+/* ---------------------------------- copy ----------------------------------- */
+.hero__tagline,
+.hero__scroll {
+  margin: 0;
+  text-transform: uppercase;
 }
 
-.sound-toggle.is-muted {
-  .sound-toggle__wave {
+.hero__tagline {
+  grid-column: content-start / col-2;
+  grid-row: row-1;
+  align-self: end;
+  padding-bottom: var(--pad);
+}
+
+.hero__scroll {
+  grid-column: col-3-inset;
+  grid-row: row-2;
+  justify-self: end;
+  align-self: start;
+  padding-top: var(--pad);
+}
+
+/* title and lead share their last baseline, so the bottom row reads as one line of type */
+.hero__title {
+  grid-column: content-start / col-3;
+  grid-row: row-3;
+  align-self: end;
+  align-self: last baseline;
+  margin: 0 0 0 -0.04em; /* pulls the M's side bearing back onto the grid */
+  font-size: clamp(56px, 7.2vw, 240px);
+  font-size: clamp(56px, min(7.2vw, 13svh), 240px);
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.hero__lead {
+  grid-column: col-3-inset / content-end;
+  grid-row: row-3;
+  align-self: end;
+  align-self: last baseline;
+  max-width: 19em;
+  margin: 0;
+  padding-bottom: var(--pad);
+  color: var(--ink-soft);
+  font-size: clamp(17px, 2.4vw, 64px);
+  font-size: clamp(17px, min(2.4vw, 4.3svh), 64px);
+  line-height: 1.24;
+  letter-spacing: -0.025em;
+  text-wrap: pretty;
+}
+
+.hero__lead-ink {
+  color: var(--ink);
+}
+
+.hero__lead-accent {
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-size: 1.1em; /* its x-height runs small next to Inter Tight */
+  font-style: italic;
+  letter-spacing: 0;
+}
+
+/*
+  Below ~1000px the lead drops under 24px, i.e. body-size type, and even full ink only just
+  clears 4.5:1 on the violet corner. Drop the muted tone; weight carries the first clause instead.
+*/
+@media (max-width: 62.49em) {
+  .hero__lead {
+    --ink-soft: var(--ink);
+  }
+
+  .hero__lead-ink {
+    font-weight: 500;
+  }
+}
+
+/* --------------------------------- phones ---------------------------------- */
+/* The three-column split has no room below 768px: stack it, keep only the horizontal rules. */
+@media (max-width: 47.99em) {
+  .hero {
+    grid-template-columns: [edge-start] var(--pad) [content-start] 1fr [content-end] var(--pad) [edge-end];
+    grid-template-rows: [head] auto [meta] 1fr [mid] 1.4fr [lead] auto [title] auto;
+  }
+
+  .hero__line--v1,
+  .hero__line--v2 {
     display: none;
   }
 
-  .sound-toggle__slash {
+  .hero__line--h1 {
+    grid-row: mid;
+  }
+
+  .hero__line--h2 {
+    grid-row: lead;
+  }
+
+  .hero__header {
+    grid-column: content-start / content-end;
+    grid-row: head;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 20px;
+  }
+
+  .menu {
+    display: flex;
+    gap: 16px;
+  }
+
+  .hero__tagline {
+    grid-column: content-start / content-end;
+    grid-row: meta;
+  }
+
+  .hero__scroll {
+    grid-column: content-start / content-end;
+    grid-row: meta;
+    align-self: end;
+    padding: 0 0 var(--pad);
+  }
+
+  .hero__lead {
+    grid-column: content-start / content-end;
+    grid-row: lead;
+    max-width: 30em;
+    padding: var(--pad) 0 0;
+    font-size: 18px;
+  }
+
+  .hero__title {
+    grid-column: content-start / content-end;
+    grid-row: title;
+    margin-bottom: var(--pad);
+    font-size: clamp(56px, 19vw, 120px);
+    line-height: 0.88;
+    white-space: normal;
+  }
+
+  .hero__title-line {
     display: block;
   }
+}
+
+/* --------------------------------- reveal ---------------------------------- */
+/* Only with JS: without it nothing would ever drop `loading`, so the copy must start visible. */
+.js .reveal {
+  --reveal-delay: calc(0.3s + var(--i, 0) * 0.08s);
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 0.9s var(--ease-out) var(--reveal-delay),
+    transform 1.2s var(--ease-out) var(--reveal-delay);
+}
+
+.js .hero__line {
+  transition: transform 1.6s var(--ease-out) 0.15s;
+}
+
+.js .hero__line--v1,
+.js .hero__line--v2 {
+  transform: scaleY(0);
+  transform-origin: 50% 0%;
+}
+
+.js .hero__line--h1,
+.js .hero__line--h2 {
+  transform: scaleX(0);
+  transform-origin: 0% 50%;
+}
+
+.js body:not(.loading) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero__line {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal,
+  .js .hero__line {
+    transform: none;
+    transition: opacity 0.6s linear;
+  }
+}
+
+/* ---------------------------------- exit ----------------------------------- */
+/*
+  The hero is pinned inside a taller stage. HeroScroll writes the progress through the stage's extra
+  height to --p (0..1) and adds .is-exiting once it moves. Each piece of copy maps its own window of
+  --p to --e and slides out of the viewport across it (the hero clips it): the tagline left, the
+  lead right, the title down, last. Then the scroll cue settles into the bottom-right corner (its
+  distance, --cue-dy, is measured by HeroScroll).
+
+  The exit uses `translate`, which composes with the load reveal's `transform` instead of fighting it.
+*/
+.hero-stage {
+  height: 250vh;
+  height: 250svh;
+}
+
+.hero__tagline {
+  --exit-from: 0;
+  --exit-to: 0.22;
+}
+
+.hero__lead {
+  --exit-from: 0.05;
+  --exit-to: 0.32;
+}
+
+.hero__title {
+  --exit-from: 0.28;
+  --exit-to: 0.52;
+}
+
+.hero__scroll {
+  --exit-from: 0.5;
+  --exit-to: 0.7;
+}
+
+.hero.is-exiting :is(.hero__tagline, .hero__scroll, .hero__lead, .hero__title) {
+  --e: clamp(0, (var(--p, 0) - var(--exit-from)) / (var(--exit-to) - var(--exit-from)), 1);
+}
+
+.hero.is-exiting .hero__tagline {
+  translate: calc(var(--e) * -70vw) 0;
+}
+
+.hero.is-exiting .hero__lead {
+  translate: calc(var(--e) * 110vw) 0;
+}
+
+.hero.is-exiting .hero__title {
+  translate: 0 calc(var(--e) * 70vh);
+}
+
+.hero.is-exiting .hero__scroll {
+  translate: 0 calc(var(--e) * var(--cue-dy, 0px));
+}
+
+/* the dashed grid fades as soon as the copy starts to leave */
+.hero__line {
+  --exit-from: 0;
+  --exit-to: 0.15;
+}
+
+.hero.is-exiting .hero__line {
+  --e: clamp(0, (var(--p, 0) - var(--exit-from)) / (var(--exit-to) - var(--exit-from)), 1);
+  opacity: calc(1 - var(--e));
 }

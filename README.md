@@ -1,63 +1,31 @@
-# WebGL Xylophone
+# Magiapix — Studio Hero
 
-A scrolling helix of frosted glass bars that ring as you sweep across them, built in Three.js with instancing, a fluid simulation, and glass faked entirely in the shader.
+A hero section for a digital studio website: a minimalist four-point menu laid out on one CSS grid, over a lavender gradient, with a pinned scroll exit. It started from [Sujenphea/xylophone](https://github.com/Sujenphea/xylophone); the WebGL scene, its sound and its dependencies have since been removed.
 
-![WebGL Xylophone Demo](https://tympanus.net/codrops/wp-content/uploads/2026/07/Home.png)
+## What it does
 
-[Article on Codrops](https://tympanus.net/codrops/?p=118008)
+- **Hero layout**: logo, menu, tagline, scroll cue, title and lead sit on one CSS grid (`css/base.css`), marked out by dashed lines. Below 768px it stacks into a single column and keeps only the horizontal lines.
+- **Load reveal**: the copy fades and rises in once the page has loaded.
+- **Scroll exit**: the hero is pinned (sticky) inside a 250svh stage, `#hero-stage`. Scrolling through the stage's extra height fades the dashed lines and slides the copy out of the viewport in turn: the tagline left, the lead right, the title down, last. Then "Scroll down" settles into the bottom-right corner. `src/js/ui/HeroScroll.ts` eases the progress and publishes it as `--p`; the timing windows sit in the exit block of `css/base.css`. The header stays put.
 
-[Demo](https://tympanus.net/Tutorials/Xylophone/)
+## Where to edit
 
-## Features
-
-- **Instanced Glass Helix**: 64 bars drawn in one call, posed entirely from instance attributes
-- **Scroll Conveyor**: advancing the scroll phase wraps bars around a finite ring, so a fixed count reads as an endless column
-- **Frosted Transmission**: the backdrop is rendered and Gaussian-blurred into its own buffer, then refracted through each bar with fresnel and thin-film iridescence
-- **Fluid Hover Wake**: a low-res GPU fluid solve drives the colour tint, and sleeps itself when the pointer goes idle
-- **GPU-Geometry Picking**: the bars exist only on the GPU, so hit testing rebuilds each instance's matrix on the CPU and tests one bounding box per bar — allocation-free, no per-triangle work
-- **Polyphonic Web Audio**: one recorded sample pitch-shifted across a major-pentatonic scale, one voice per strike, with a voice cap for fast sweeps
+| What | File |
+| --- | --- |
+| Copy, menu links, logo | `src/index.html` |
+| Colors, background gradient, fonts, grid, breakpoints | `css/base.css` (`:root` tokens) |
+| Scroll exit: stage length, timing per element | `css/base.css` (`.hero-stage`, exit block) |
 
 ## Development
 
-Start the development server with hot module replacement:
-
 ```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-Type-check and lint:
-
-```bash
-npm run lint
-```
-
-## Building for Production
-
-Create an optimized production build:
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist/` directory. Preview the production build:
-
-```bash
-npm run preview
+npm install
+npm run dev       # http://localhost:5173
+npm run lint      # type-check + eslint
+npm run build     # static output in dist/
+npm run preview   # preview the production build
 ```
 
 ## Credits
 
-- Fluid solver adapted from [WebGL-Fluid-Simulation](https://github.com/PavelDoGreat/WebGL-Fluid-Simulation) by Pavel Dobryakov (MIT)
-- Built with [three.js](https://threejs.org/) and [postprocessing](https://github.com/pmndrs/postprocessing)
-
-## Misc
-
-Follow Sujen: [Twitter](https://x.com/sujen_p), [GitHub](https://github.com/Sujenphea), [Linkedin](https://www.linkedin.com/in/sujenphea/)
-
-Follow Codrops: [X](http://www.x.com/codrops), [Facebook](https://www.facebook.com/codrops), [Instagram](https://www.instagram.com/codropsss/), [LinkedIn](https://www.linkedin.com/company/codrops/), [GitHub](https://github.com/codrops)
-
-## License
-
-[MIT](LICENSE)
+- Based on the WebGL xylophone by [Sujen Phea](https://github.com/Sujenphea) for [Codrops](https://tympanus.net/codrops/?p=118008) (MIT, see `LICENSE`)

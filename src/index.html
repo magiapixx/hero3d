@@ -3,58 +3,69 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebGL Xylophone | Codrops</title>
+    <title>Magiapix — Digital Studio</title>
     <meta
       name="description"
-      content="An interactive WebGL xylophone: a scrolling helix of frosted glass bars that ring as you sweep the cursor across them."
+      content="Magiapix is a digital studio shaping brands, websites and interactive experiences with strategy, design and code."
     />
-    <meta name="keywords" content="webgl, three.js, instancing, fluid simulation, web audio, glass, refraction" />
-    <link rel="icon" type="image/svg+xml" href="https://tympanus.net/favicon/favicon.svg" />
-    <link rel="shortcut icon" href="https://tympanus.net/favicon/favicon.ico" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316112b'/%3E%3Cpath fill='%23fff' d='M7 24l5-16h3l-5 16zm6 0l5-16h3l-5 16z'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter+Tight:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <script>
       document.documentElement.className = "js"
     </script>
-    <!-- <script src="//tympanus.net/codrops/adpacks/analytics.js"></script> -->
   </head>
 
   <!-- `loading` draws the overlay + bar loader in base.css; main.ts drops it once the bars exist -->
-  <body class="demo-1 loading">
-    <noscript>
-      <div style="padding: 2rem; text-align: center; color: #fff; background: #000">
-        <h1>JavaScript Required</h1>
-        <p>This demo requires JavaScript and WebGL support.</p>
-        <p>Please enable JavaScript and use a modern browser.</p>
-      </div>
-    </noscript>
-
-    <!-- tracks the layout viewport; steadier than innerHeight while mobile browser chrome moves -->
-    <div id="sizer" aria-hidden="true"></div>
-
+  <body class="loading">
     <main>
-      <header class="frame">
-        <h1 class="frame__title">WebGL Xylophone</h1>
-        <nav class="frame__links">
-          <a href="https://tympanus.net/codrops/?p=118008">Article</a>
-          <a href="https://tympanus.net/codrops/hub/">All demos</a>
-          <a href="https://github.com/Sujenphea/xylophone">GitHub</a>
-        </nav>
-        <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="true">
-          <svg class="sound-toggle__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 9v6h4l5 4V5L8 9H4z" />
-            <path class="sound-toggle__wave" d="M16.5 8.8a4.5 4.5 0 0 1 0 6.4" />
-            <path class="sound-toggle__wave" d="M19.2 6.1a8.5 8.5 0 0 1 0 11.8" />
-            <path class="sound-toggle__slash" d="M3.5 3.5l17 17" />
-          </svg>
-          <span class="sound-toggle__text">Sound on</span>
-        </button>
-        <nav class="frame__tags">
-          <a href="https://tympanus.net/codrops/hub/tag/3D/">#3D</a>
-          <a href="https://tympanus.net/codrops/hub/tag/three-js/">#three.js</a>
-          <a href="https://tympanus.net/codrops/hub/tag/webgl/">#webgl</a>
-        </nav>
-      </header>
+      <!-- Scroll stage: taller than the screen, with the hero pinned inside it. Scrolling through the
+           extra height plays the hero's exit (HeroScroll + the exit block in base.css). -->
+      <div id="hero-stage" class="hero-stage">
+        <section id="hero" class="hero" aria-labelledby="hero-title">
+          <div class="hero__lines" aria-hidden="true">
+            <span class="hero__line hero__line--v1"></span>
+            <span class="hero__line hero__line--v2"></span>
+            <span class="hero__line hero__line--h1"></span>
+            <span class="hero__line hero__line--h2"></span>
+          </div>
+
+          <header class="hero__header">
+            <a class="logo reveal" href="./" aria-label="Magiapix — home">
+              <span class="logo__word">Magiapix</span>
+              <svg class="logo__mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 20 9 4h3L7 20zm6.5 0 5-16h3l-5 16z" />
+              </svg>
+            </a>
+            <nav class="menu" aria-label="Main">
+              <a class="menu__link reveal" href="#work" style="--i: 1">Work</a>
+              <a class="menu__link reveal" href="#services" style="--i: 2">Services</a>
+              <a class="menu__link reveal" href="#contact" style="--i: 3">Let’s talk</a>
+            </nav>
+          </header>
+
+          <p class="hero__tagline reveal" style="--i: 4">Digital studio<br />design × code</p>
+          <p class="hero__scroll reveal" style="--i: 4">Scroll down</p>
+
+          <h1 id="hero-title" class="hero__title reveal" style="--i: 2">
+            <span class="hero__title-line">Meet</span>
+            <span class="hero__title-line">Magiapix</span>
+          </h1>
+          <p class="hero__lead reveal" style="--i: 3">
+            <span class="hero__lead-ink">Magiapix shapes digital experiences,</span> blending strategy, design and code
+            into brands, websites and interactive worlds—turning every visit into
+            <span class="hero__lead-accent">lasting impact.</span>
+          </p>
+        </section>
+      </div>
     </main>
-    <!-- <script src="https://tympanus.net/codrops/adpacks/cda_sponsor.js"></script> -->
     <script type="module" src="./js/main.ts"></script>
   </body>
 </html>
